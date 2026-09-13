@@ -1,8 +1,15 @@
 /**
  * @fileoverview Content script for the Infor CloudSuite Enabler extension.
  * Re-enables keyboard shortcuts based on user settings by intercepting
- * events in the capture phase and stopping their propagation.
+ * events in the capture phase on window and stopping their propagation.
  */
+
+const DEBUG = false;
+function debugLog(...args) {
+    if (DEBUG) {
+        console.log(...args);
+    }
+}
 
 let settings = {};
 const undoHistory = new Map();
@@ -52,89 +59,135 @@ function saveState(element) {
 }
 
 /**
- * Restores the previous state of an input element from its undo history.
+ * Restores the previous state of an input element from its undo history
+ * and dispatches input/change events so Infor / reactive frameworks stay in sync.
  * @param {HTMLInputElement|HTMLTextAreaElement} element The input element.
  */
 function undo(element) {
     if (!undoHistory.has(element)) return;
     const history = undoHistory.get(element);
     
+    let targetValue = null;
     if (history.length > 1) {
         history.pop();
-        element.value = history[history.length - 1];
+        targetValue = history[history.length - 1];
     } else if (history.length === 1) {
-         history.pop();
-         element.value = '';
+        history.pop();
+        targetValue = '';
+    }
+
+    if (targetValue !== null) {
+        element.value = targetValue;
+        element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
     }
 }
 
-// --- Event Listeners ---
+// --- Event Listeners Attached to window (Highest Capture Priority) ---
 
-// Use 'focusin' and 'input' to manage state for the Undo feature.
-document.addEventListener('focusin', (event) => {
+// Use 'focusin' and 'input' on window to manage state for the Undo feature.
+window.addEventListener('focusin', (event) => {
     if (settings.enableUndo && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
         saveState(event.target);
     }
 }, true);
 
- document.addEventListener('input', (event) => {
+window.addEventListener('input', (event) => {
     if (settings.enableUndo && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
         saveState(event.target);
     }
 }, true);
 
-// Main keydown listener to intercept and manage all hotkeys.
-document.addEventListener('keydown', (event) => {
+// Main keydown listener to intercept and manage all hotkeys on window.
+window.addEventListener('keydown', (event) => {
     const isCtrlPressed = event.ctrlKey || event.metaKey;
     if (!isCtrlPressed) return;
 
     const key = event.key.toLowerCase();
     const activeElement = document.activeElement;
 
-    // Handle Undo (Ctrl+Z)
+    // Handle Undo (Ctrl+Z) - ensure Shift is not pressed (so Ctrl+Shift+Z / Redo is not hijacked)
     if (settings.enableUndo && !event.shiftKey && key === 'z') {
         if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-            console.log('Infor Enabler: Undo triggered.');
+            debugLog('Infor Enabler: Undo triggered.');
             event.preventDefault();
             event.stopPropagation();
             undo(activeElement);
         }
-        return; // Stop further processing for this key combination
+        return;
     }
 
-    // Handle Copy, Paste, Select All, Find based on settings
-    const shouldStop = 
-        (settings.enableCopy && key === 'c') ||
-        (settings.enablePaste && key === 'v') ||
-        (settings.enableSelectAll && key === 'a') ||
-        (settings.enableFind && key === 'f');
+    // Handle Copy (Ctrl+C), Cut (Ctrl+X), Paste (Ctrl+V), Select All (Ctrl+A), Find (Ctrl+F)
+    // Prevent intercepting Chrome DevTools shortcuts (e.g., Ctrl+Shift+C)
+    const isPlainCopy = settings.enableCopy && !event.shiftKey && key === 'c';
+    const isPlainCut  = settings.enableCopy && !event.shiftKey && key === 'x';
+    const isPlainSelectAll = settings.enableSelectAll && !event.shiftKey && key === 'a';
+    const isPlainFind = settings.enableFind && !event.shiftKey && key === 'f';
+    const isPaste = settings.enablePaste && key === 'v'; // allow Ctrl+V and Ctrl+Shift+V
+
+    const shouldStop = isPlainCopy || isPlainCut || isPaste || isPlainSelectAll || isPlainFind;
 
     if (shouldStop) {
-        console.log(`Infor Enabler: Detected Ctrl+${key.toUpperCase()}. Stopping propagation.`);
-        event.stopImmediatePropagation();
-    }
-}, true); // Use capture phase to run before the page's scripts.
-
-// Listener for the 'copy' event
-document.addEventListener('copy', (event) => {
-    if (settings.enableCopy) {
-        console.log("Infor Enabler: Detected copy event. Stopping propagation.");
+        debugLog(`Infor Enabler: Detected Ctrl+${key.toUpperCase()}. Stopping propagation.`);
         event.stopImmediatePropagation();
     }
 }, true);
 
-// Listener for the 'paste' event to handle trimmed pasting
-document.addEventListener('paste', (event) => {
-    if (settings.enablePaste) {
-        console.log("Infor Enabler: Detected paste event.");
+// Listener for the 'copy' event on window
+window.addEventListener('copy', (event) => {
+    if (settings.enableCopy) {
+        debugLog("Infor Enabler: Detected copy event. Stopping propagation.");
         event.stopImmediatePropagation();
-        event.preventDefault(); // Prevent default paste to insert our own text
+    }
+}, true);
 
-        const text = (event.clipboardData || window.clipboardData).getData('text/plain').trim();
-        if (document.execCommand("insertText", false, text)) {
-            console.log(`Infor Enabler: Pasted trimmed text: "${text}"`);
+// Listener for the 'cut' event on window
+window.addEventListener('cut', (event) => {
+    if (settings.enableCopy) {
+        debugLog("Infor Enabler: Detected cut event. Stopping propagation.");
+        event.stopImmediatePropagation();
+    }
+}, true);
+
+// Listener for the 'paste' event to handle trimmed pasting and framework synchronization
+window.addEventListener('paste', (event) => {
+    if (settings.enablePaste) {
+        debugLog("Infor Enabler: Detected paste event.");
+        event.stopImmediatePropagation();
+        event.preventDefault(); // Prevent default paste to insert trimmed text
+
+        const rawText = (event.clipboardData || window.clipboardData)?.getData('text/plain') || '';
+        const text = rawText.trim();
+
+        let inserted = false;
+        try {
+            inserted = document.execCommand("insertText", false, text);
+        } catch (e) {
+            inserted = false;
+        }
+
+        const activeElement = document.activeElement;
+
+        // Fallback for custom or shadow inputs where execCommand fails
+        if (!inserted && activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && !activeElement.readOnly && !activeElement.disabled) {
+            const start = activeElement.selectionStart ?? activeElement.value.length;
+            const end = activeElement.selectionEnd ?? activeElement.value.length;
+            const val = activeElement.value;
+            activeElement.value = val.substring(0, start) + text + val.substring(end);
+            activeElement.selectionStart = activeElement.selectionEnd = start + text.length;
+            inserted = true;
+        }
+
+        // Dispatch synthetic events so Infor / Angular / SoHo components update their internal models
+        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+            activeElement.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+            activeElement.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+        }
+
+        if (inserted) {
+            debugLog(`Infor Enabler: Pasted trimmed text: "${text}"`);
         } else {
-            console.warn("Infor Enabler: execCommand('insertText') failed. Pasting might not work as expected.");
+            console.warn("Infor Enabler: Could not paste text into active element.");
         }
     }
 }, true);
@@ -148,7 +201,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
                 settings[key] = changes[key].newValue !== false;
             }
         }
-        console.log('Infor Enabler: Settings updated dynamically.', settings);
+        debugLog('Infor Enabler: Settings updated dynamically.', settings);
     }
 });
 
