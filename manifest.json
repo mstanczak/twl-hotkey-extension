@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Infor CloudSuite Copy/Paste Enabler",
+  "name": "TWL Hotkey Enabler for Infor CloudSuite",
   "version": "1.1",
-  "description": "Re-enables Ctrl+C and Ctrl+V keyboard shortcuts on Infor CloudSuite sites.",
+  "description": "Re-enables Ctrl+C, Ctrl+V, Ctrl+A, and other hotkeys on Infor CloudSuite sites.",
   "permissions": [
     "storage",
     "scripting"
