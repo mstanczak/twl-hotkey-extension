@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "TWL Hotkey Enabler for Infor CloudSuite",
+  "name": "TWL Hotkey Enabler",
   "version": "1.1",
-  "description": "Re-enables Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+A, and other hotkeys on Infor CloudSuite sites.",
+  "description": "Re-enables standard keyboard shortcuts (Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+A, Ctrl+F, Ctrl+Z) and enhanced order pasting on TWL web interfaces.",
   "permissions": [
     "storage",
     "clipboardRead"

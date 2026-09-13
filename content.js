@@ -1,5 +1,5 @@
 /**
- * @fileoverview Content script for the Infor CloudSuite Enabler extension.
+ * @fileoverview Content script for the TWL Hotkey Enabler extension.
  * Re-enables keyboard shortcuts based on user settings by intercepting
  * events in the capture phase on window and stopping their propagation.
  */
@@ -31,7 +31,7 @@ function initialize() {
     ];
     chrome.storage.sync.get(settingKeys, (loadedSettings) => {
         if (chrome.runtime.lastError) {
-            console.error('Infor Enabler: Error loading settings:', chrome.runtime.lastError);
+            console.error('TWL Enabler: Error loading settings:', chrome.runtime.lastError);
             return;
         }
         // Set defaults to true if a setting is not defined (enhanced paste defaults to false)
@@ -45,7 +45,7 @@ function initialize() {
             enhancedPastePrefix: typeof loadedSettings.enhancedPastePrefix === 'string' ? loadedSettings.enhancedPastePrefix : 'o00',
             enhancedPasteStripAfterDash: loadedSettings.enhancedPasteStripAfterDash !== false,
         };
-        console.log('Infor Enabler: Settings loaded and active.', settings);
+        console.log('TWL Enabler: Settings loaded and active.', settings);
     });
 }
 
@@ -72,7 +72,7 @@ function saveState(element) {
 
 /**
  * Restores the previous state of an input element from its undo history
- * and dispatches input/change events so Infor / reactive frameworks stay in sync.
+ * and dispatches input/change events so TWL / reactive frameworks stay in sync.
  * @param {HTMLInputElement|HTMLTextAreaElement} element The input element.
  */
 function undo(element) {
@@ -121,7 +121,7 @@ window.addEventListener('keydown', (event) => {
     // Handle Undo (Ctrl+Z) - ensure Shift is not pressed (so Ctrl+Shift+Z / Redo is not hijacked)
     if (settings.enableUndo && !event.shiftKey && key === 'z') {
         if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-            debugLog('Infor Enabler: Undo triggered.');
+            debugLog('TWL Enabler: Undo triggered.');
             event.preventDefault();
             event.stopPropagation();
             undo(activeElement);
@@ -135,7 +135,7 @@ window.addEventListener('keydown', (event) => {
         if (isEditable) {
             event.preventDefault();
             event.stopImmediatePropagation();
-            debugLog('Infor Enabler: Enhanced Paste (Ctrl+O) triggered.');
+            debugLog('TWL Enabler: Enhanced Paste (Ctrl+O) triggered.');
 
             navigator.clipboard.readText().then((rawText) => {
                 if (!rawText) return;
@@ -174,12 +174,12 @@ window.addEventListener('keydown', (event) => {
                 }
 
                 if (inserted) {
-                    debugLog(`Infor Enabler: Enhanced pasted order number: "${formattedText}"`);
+                    debugLog(`TWL Enabler: Enhanced pasted order number: "${formattedText}"`);
                 } else {
-                    console.warn("Infor Enabler: Could not paste enhanced text into active element.");
+                    console.warn("TWL Enabler: Could not paste enhanced text into active element.");
                 }
             }).catch((err) => {
-                console.warn('Infor Enabler: Failed to read clipboard for Enhanced Paste:', err);
+                console.warn('TWL Enabler: Failed to read clipboard for Enhanced Paste:', err);
             });
             return;
         }
@@ -196,7 +196,7 @@ window.addEventListener('keydown', (event) => {
     const shouldStop = isPlainCopy || isPlainCut || isPaste || isPlainSelectAll || isPlainFind;
 
     if (shouldStop) {
-        debugLog(`Infor Enabler: Detected Ctrl+${key.toUpperCase()}. Stopping propagation.`);
+        debugLog(`TWL Enabler: Detected Ctrl+${key.toUpperCase()}. Stopping propagation.`);
         event.stopImmediatePropagation();
     }
 }, true);
@@ -204,7 +204,7 @@ window.addEventListener('keydown', (event) => {
 // Listener for the 'copy' event on window
 window.addEventListener('copy', (event) => {
     if (settings.enableCopy) {
-        debugLog("Infor Enabler: Detected copy event. Stopping propagation.");
+        debugLog("TWL Enabler: Detected copy event. Stopping propagation.");
         event.stopImmediatePropagation();
     }
 }, true);
@@ -212,7 +212,7 @@ window.addEventListener('copy', (event) => {
 // Listener for the 'cut' event on window
 window.addEventListener('cut', (event) => {
     if (settings.enableCopy) {
-        debugLog("Infor Enabler: Detected cut event. Stopping propagation.");
+        debugLog("TWL Enabler: Detected cut event. Stopping propagation.");
         event.stopImmediatePropagation();
     }
 }, true);
@@ -220,7 +220,7 @@ window.addEventListener('cut', (event) => {
 // Listener for the 'paste' event to handle trimmed pasting and framework synchronization
 window.addEventListener('paste', (event) => {
     if (settings.enablePaste) {
-        debugLog("Infor Enabler: Detected paste event.");
+        debugLog("TWL Enabler: Detected paste event.");
         event.stopImmediatePropagation();
         event.preventDefault(); // Prevent default paste to insert trimmed text
 
@@ -246,16 +246,16 @@ window.addEventListener('paste', (event) => {
             inserted = true;
         }
 
-        // Dispatch synthetic events so Infor / Angular / SoHo components update their internal models
+        // Dispatch synthetic events so page components update their internal models
         if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
             activeElement.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
             activeElement.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
         }
 
         if (inserted) {
-            debugLog(`Infor Enabler: Pasted trimmed text: "${text}"`);
+            debugLog(`TWL Enabler: Pasted trimmed text: "${text}"`);
         } else {
-            console.warn("Infor Enabler: Could not paste text into active element.");
+            console.warn("TWL Enabler: Could not paste text into active element.");
         }
     }
 }, true);
@@ -278,7 +278,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         if (changes.enhancedPasteStripAfterDash !== undefined) {
             settings.enhancedPasteStripAfterDash = changes.enhancedPasteStripAfterDash.newValue !== false;
         }
-        debugLog('Infor Enabler: Settings updated dynamically.', settings);
+        debugLog('TWL Enabler: Settings updated dynamically.', settings);
     }
 });
 
