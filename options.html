@@ -125,37 +125,55 @@
                         </span>
                     </label>
 
-                    <!-- Enhanced TWL Order Paste (Ctrl+O) Option -->
-                    <div class="feature-group">
-                        <label for="feature-enhanced-paste" class="option-item">
-                            <input type="checkbox" id="feature-enhanced-paste" name="feature" value="enhancedPaste" class="feature-checkbox checkbox">
-                            <span class="option-text">
-                                <span class="option-title">Enable Enhanced TWL Order Paste (Ctrl+O)</span>
-                                <span class="option-description">Formats copied CloudSuite Distribution order numbers to TWL format upon paste.</span>
-                            </span>
-                        </label>
+                </fieldset>
 
-                        <!-- Nested sub-options container -->
-                        <div id="enhanced-paste-suboptions" class="sub-options-container">
-                            <div class="sub-option-field">
-                                <label for="enhanced-paste-prefix" class="sub-option-label">TWL Prefix</label>
-                                <div class="input-with-hint">
-                                    <input type="text" id="enhanced-paste-prefix" class="text-input" placeholder="o00" value="o00" maxlength="15">
-                                    <span class="sub-option-hint">Prepended to the order number (default: o00).</span>
-                                </div>
-                            </div>
+                <!-- Advanced Settings Section -->
+                <details class="advanced-panel" id="advanced-panel">
+                    <summary class="advanced-summary">
+                        <span class="advanced-summary-content">
+                            <svg class="gear-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            <span class="advanced-label">Advanced Settings</span>
+                        </span>
+                        <span class="advanced-chevron">&#9662;</span>
+                    </summary>
 
-                            <label for="enhanced-paste-strip-suffix" class="sub-option-item">
-                                <input type="checkbox" id="enhanced-paste-strip-suffix" class="checkbox">
+                    <div class="advanced-content">
+                        <p class="advanced-description">Specialized order number formatting for CloudSuite Distribution &rarr; TWL workflows.</p>
+
+                        <!-- Enhanced TWL Order Paste (Ctrl+O) Option -->
+                        <div class="feature-group">
+                            <label for="feature-enhanced-paste" class="option-item option-item-subtle">
+                                <input type="checkbox" id="feature-enhanced-paste" name="feature" value="enhancedPaste" class="feature-checkbox checkbox">
                                 <span class="option-text">
-                                    <span class="sub-option-title">Strip dash and everything after it (e.g., converts '12345-01' to '12345')</span>
-                                    <span class="option-description">If unchecked, all dashes are removed while keeping subsequent numbers (e.g., '12345-01' becomes '1234501').</span>
+                                    <span class="option-title">Enable Enhanced TWL Order Paste (Ctrl+O)</span>
+                                    <span class="option-description">Formats copied CloudSuite Distribution order numbers to TWL format upon paste.</span>
                                 </span>
                             </label>
+
+                            <!-- Nested sub-options container -->
+                            <div id="enhanced-paste-suboptions" class="sub-options-container">
+                                <div class="sub-option-field">
+                                    <label for="enhanced-paste-prefix" class="sub-option-label">TWL Prefix</label>
+                                    <div class="input-with-hint">
+                                        <input type="text" id="enhanced-paste-prefix" class="text-input" placeholder="o00" value="o00" maxlength="15">
+                                        <span class="sub-option-hint">Prepended to the order number (default: o00).</span>
+                                    </div>
+                                </div>
+
+                                <label for="enhanced-paste-strip-suffix" class="sub-option-item">
+                                    <input type="checkbox" id="enhanced-paste-strip-suffix" class="checkbox" checked>
+                                    <span class="option-text">
+                                        <span class="sub-option-title">Strip dash and everything after it (e.g., converts '12345-01' to '12345')</span>
+                                        <span class="option-description">Default behavior. If unchecked, all dashes are removed while keeping subsequent numbers (e.g., '12345-01' becomes '1234501').</span>
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     </div>
-
-                </fieldset>
+                </details>
 
                 <!-- Added Save Button -->
                 <button type="submit" id="save-btn" class="save-button">Save Settings</button>

@@ -43,7 +43,7 @@ function initialize() {
             enableUndo: loadedSettings.enableUndo !== false,
             enableEnhancedPaste: loadedSettings.enableEnhancedPaste === true,
             enhancedPastePrefix: typeof loadedSettings.enhancedPastePrefix === 'string' ? loadedSettings.enhancedPastePrefix : 'o00',
-            enhancedPasteStripAfterDash: loadedSettings.enhancedPasteStripAfterDash === true,
+            enhancedPasteStripAfterDash: loadedSettings.enhancedPasteStripAfterDash !== false,
         };
         console.log('Infor Enabler: Settings loaded and active.', settings);
     });
@@ -276,7 +276,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
             settings.enhancedPastePrefix = typeof changes.enhancedPastePrefix.newValue === 'string' ? changes.enhancedPastePrefix.newValue : 'o00';
         }
         if (changes.enhancedPasteStripAfterDash !== undefined) {
-            settings.enhancedPasteStripAfterDash = changes.enhancedPasteStripAfterDash.newValue === true;
+            settings.enhancedPasteStripAfterDash = changes.enhancedPasteStripAfterDash.newValue !== false;
         }
         debugLog('Infor Enabler: Settings updated dynamically.', settings);
     }

@@ -5,7 +5,8 @@ const featureCheckboxes = document.querySelectorAll('.feature-checkbox');
 const statusMessage = document.getElementById('status-message');
 const celebrationContainer = document.getElementById('celebration-container');
 
-// Enhanced Paste DOM Elements
+// Enhanced Paste & Advanced DOM Elements
+const advancedPanel = document.getElementById('advanced-panel');
 const enhancedPasteCheckbox = document.getElementById('feature-enhanced-paste');
 const enhancedPasteSuboptions = document.getElementById('enhanced-paste-suboptions');
 const enhancedPastePrefixInput = document.getElementById('enhanced-paste-prefix');
@@ -83,10 +84,15 @@ function loadOptions() {
         document.getElementById('feature-find').checked = settings.enableFind !== false;
         document.getElementById('feature-undo').checked = settings.enableUndo !== false;
 
-        // Enhanced paste defaults to false, prefix to 'o00', strip suffix to false
+        // Enhanced paste defaults to false, prefix to 'o00', strip suffix defaults to true
         enhancedPasteCheckbox.checked = settings.enableEnhancedPaste === true;
         enhancedPastePrefixInput.value = typeof settings.enhancedPastePrefix === 'string' ? settings.enhancedPastePrefix : 'o00';
-        enhancedPasteStripSuffixCheckbox.checked = settings.enhancedPasteStripAfterDash === true;
+        enhancedPasteStripSuffixCheckbox.checked = settings.enhancedPasteStripAfterDash !== false;
+
+        // Automatically expand advanced panel if enhanced paste is currently enabled
+        if (advancedPanel && settings.enableEnhancedPaste === true) {
+            advancedPanel.open = true;
+        }
 
         updateSuboptionsState();
         updateSelectAllState();

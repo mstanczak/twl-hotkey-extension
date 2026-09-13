@@ -142,6 +142,94 @@ fieldset {
     color: #6b7280;
 }
 
+/* Advanced Settings Panel */
+.advanced-panel {
+    border-top: 1px dashed #e5e7eb;
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.advanced-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #4b5563;
+    user-select: none;
+    list-style: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.advanced-summary::-webkit-details-marker {
+    display: none;
+}
+
+.advanced-summary:hover {
+    background-color: #f3f4f6;
+    color: #1f2937;
+    border-color: #d1d5db;
+}
+
+.advanced-summary-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gear-icon {
+    color: #6b7280;
+}
+
+.advanced-chevron {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    transition: transform 0.2s ease-in-out;
+}
+
+.advanced-panel[open] .advanced-chevron {
+    transform: rotate(180deg);
+}
+
+.advanced-panel[open] .advanced-summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+    background-color: #f9fafb;
+}
+
+.advanced-content {
+    padding: 1.25rem 1rem 1rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-top: none;
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.advanced-description {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+.option-item-subtle {
+    border-color: #e5e7eb;
+    background-color: #ffffff;
+}
+
+.option-item-subtle:hover {
+    background-color: #f9fafb;
+}
+
 /* Feature Group & Nested Sub-Options */
 .feature-group {
     display: flex;

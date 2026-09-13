@@ -17,7 +17,7 @@ chrome.runtime.onInstalled.addListener((details) => {
             enableUndo: true,
             enableEnhancedPaste: false,
             enhancedPastePrefix: "o00",
-            enhancedPasteStripAfterDash: false
+            enhancedPasteStripAfterDash: true
         };
         chrome.storage.sync.set(defaultOptions);
     }
