@@ -48,37 +48,60 @@ function initializePopup() {
 }
 
 /**
+ * Pattern tester for supported TWL / CloudSuite domains.
+ * @param {string} url
+ * @returns {boolean}
+ */
+function isSupportedTWLUrl(url) {
+    if (!url) return false;
+    try {
+        const parsed = new URL(url);
+        const host = parsed.hostname.toLowerCase();
+        return host.endsWith('inforcloudsuite.com') ||
+               host.endsWith('inforfederatedservice.com') ||
+               host.endsWith('aws.infor.com') ||
+               host.includes('infor') ||
+               host.includes('twl');
+    } catch (e) {
+        // Fallback simple string match
+        const lower = url.toLowerCase();
+        return lower.includes('inforcloudsuite.com') ||
+               lower.includes('inforfederatedservice.com') ||
+               lower.includes('aws.infor.com');
+    }
+}
+
+/**
  * Queries active tab to see if TWL hotkey content script is active.
  */
 function checkActiveTab() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (!tabs || tabs.length === 0 || !tabs[0].id) {
-            setTabStatus(false, 'Inactive');
+            setTabStatus('inactive', 'Inactive');
             return;
         }
 
         const tab = tabs[0];
-        const url = tab.url || '';
-        const isSupportedHost = url.includes('.inforcloudsuite.com') || url.includes('.inforfederatedservice.com') || url.includes('.aws.infor.com');
+        const url = tab.url || tab.pendingUrl || '';
 
-        if (!isSupportedHost) {
-            setTabStatus(false, 'Inactive');
-            return;
-        }
-
+        // First attempt direct ping to the content script in the active tab
         chrome.tabs.sendMessage(tab.id, { action: 'ping-status' }, (response) => {
-            if (chrome.runtime.lastError || !response || !response.active) {
-                // If content script hasn't responded yet but host matches
-                setTabStatus(true, 'Ready');
+            const err = chrome.runtime.lastError;
+            if (!err && response && response.active) {
+                // Content script is definitely running and responsive
+                setTabStatus('active', 'Active');
+            } else if (isSupportedTWLUrl(url)) {
+                // URL matches TWL domain; content script is configured to run or ready
+                setTabStatus('active', 'Active');
             } else {
-                setTabStatus(true, 'Active');
+                setTabStatus('inactive', 'Inactive');
             }
         });
     });
 }
 
-function setTabStatus(isActive, text) {
-    statusPill.className = `status-pill ${isActive ? 'active' : 'inactive'}`;
+function setTabStatus(statusClass, text) {
+    statusPill.className = `status-pill ${statusClass}`;
     statusText.textContent = text;
 }
 

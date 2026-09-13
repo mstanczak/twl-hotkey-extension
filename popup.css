@@ -80,6 +80,15 @@ body {
     background-color: #10b981;
 }
 
+.status-pill.ready {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.status-pill.ready .status-dot {
+    background-color: #3b82f6;
+}
+
 .status-pill.inactive {
     background-color: #f3f4f6;
     color: #6b7280;
