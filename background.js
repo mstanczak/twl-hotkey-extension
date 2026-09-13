@@ -10,10 +10,12 @@ chrome.runtime.onInstalled.addListener((details) => {
         console.log('Extension installed. Setting default options.');
         // Set default options on first install.
         const defaultOptions = {
-            'feature-copy': true,
-            'feature-paste': true,
-            'feature-highlight': false
+            enableCopy: true,
+            enablePaste: true,
+            enableSelectAll: true,
+            enableFind: true,
+            enableUndo: true
         };
-        chrome.storage.sync.set({ options: defaultOptions });
+        chrome.storage.sync.set(defaultOptions);
     }
 });

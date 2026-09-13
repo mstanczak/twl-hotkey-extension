@@ -139,5 +139,18 @@ document.addEventListener('paste', (event) => {
     }
 }, true);
 
+// Listen for changes from the options page to apply settings in real time without refreshing
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'sync') {
+        const keys = ['enableCopy', 'enablePaste', 'enableSelectAll', 'enableFind', 'enableUndo'];
+        for (const key of keys) {
+            if (changes[key] !== undefined) {
+                settings[key] = changes[key].newValue !== false;
+            }
+        }
+        console.log('Infor Enabler: Settings updated dynamically.', settings);
+    }
+});
+
 // Initialize the script to load settings
 initialize();

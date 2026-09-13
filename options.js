@@ -10,7 +10,8 @@ const featureMapping = {
     'feature-copy': 'enableCopy',
     'feature-paste': 'enablePaste',
     'feature-select-all': 'enableSelectAll',
-    'feature-find': 'enableFind'
+    'feature-find': 'enableFind',
+    'feature-undo': 'enableUndo'
 };
 
 /**
@@ -64,6 +65,7 @@ function loadOptions() {
         document.getElementById('feature-paste').checked = settings.enablePaste !== false;
         document.getElementById('feature-select-all').checked = settings.enableSelectAll !== false;
         document.getElementById('feature-find').checked = settings.enableFind !== false;
+        document.getElementById('feature-undo').checked = settings.enableUndo !== false;
 
         updateSelectAllState();
     });
