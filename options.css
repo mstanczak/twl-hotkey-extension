@@ -142,6 +142,90 @@ fieldset {
     color: #6b7280;
 }
 
+/* Feature Group & Nested Sub-Options */
+.feature-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sub-options-container {
+    margin-left: 1.5rem;
+    padding: 1rem 1.25rem;
+    background-color: #f9fafb;
+    border-left: 3px solid #2e64b0;
+    border-radius: 0 0.5rem 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.sub-options-container.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    border-left-color: #d1d5db;
+    background-color: #f3f4f6;
+}
+
+.sub-option-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.sub-option-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.input-with-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.text-input {
+    width: 6.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.9375rem;
+    color: #1f2937;
+    background-color: #ffffff;
+    font-family: inherit;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.text-input:focus {
+    outline: none;
+    border-color: #2e64b0;
+    box-shadow: 0 0 0 3px rgba(46, 100, 176, 0.2);
+}
+
+.sub-option-hint {
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+.sub-option-item {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+}
+
+.sub-option-item .checkbox {
+    margin-top: 0.125rem;
+}
+
+.sub-option-title {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #1f2937;
+}
+
 /* Save Button Styles */
 .save-button {
     background-color: #2e64b0;

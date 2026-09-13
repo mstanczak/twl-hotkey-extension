@@ -125,6 +125,36 @@
                         </span>
                     </label>
 
+                    <!-- Enhanced TWL Order Paste (Ctrl+O) Option -->
+                    <div class="feature-group">
+                        <label for="feature-enhanced-paste" class="option-item">
+                            <input type="checkbox" id="feature-enhanced-paste" name="feature" value="enhancedPaste" class="feature-checkbox checkbox">
+                            <span class="option-text">
+                                <span class="option-title">Enable Enhanced TWL Order Paste (Ctrl+O)</span>
+                                <span class="option-description">Formats copied CloudSuite Distribution order numbers to TWL format upon paste.</span>
+                            </span>
+                        </label>
+
+                        <!-- Nested sub-options container -->
+                        <div id="enhanced-paste-suboptions" class="sub-options-container">
+                            <div class="sub-option-field">
+                                <label for="enhanced-paste-prefix" class="sub-option-label">TWL Prefix</label>
+                                <div class="input-with-hint">
+                                    <input type="text" id="enhanced-paste-prefix" class="text-input" placeholder="o00" value="o00" maxlength="15">
+                                    <span class="sub-option-hint">Prepended to the order number (default: o00).</span>
+                                </div>
+                            </div>
+
+                            <label for="enhanced-paste-strip-suffix" class="sub-option-item">
+                                <input type="checkbox" id="enhanced-paste-strip-suffix" class="checkbox">
+                                <span class="option-text">
+                                    <span class="sub-option-title">Strip dash and everything after it (e.g., converts '12345-01' to '12345')</span>
+                                    <span class="option-description">If unchecked, all dashes are removed while keeping subsequent numbers (e.g., '12345-01' becomes '1234501').</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
                 </fieldset>
 
                 <!-- Added Save Button -->

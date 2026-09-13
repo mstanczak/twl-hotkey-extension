@@ -19,21 +19,33 @@ const MAX_HISTORY_SIZE = 50; // Limit history size per element
  * Loads settings from Chrome storage and initializes the script.
  */
 function initialize() {
-    const settingKeys = ['enableCopy', 'enablePaste', 'enableSelectAll', 'enableFind', 'enableUndo'];
+    const settingKeys = [
+        'enableCopy',
+        'enablePaste',
+        'enableSelectAll',
+        'enableFind',
+        'enableUndo',
+        'enableEnhancedPaste',
+        'enhancedPastePrefix',
+        'enhancedPasteStripAfterDash'
+    ];
     chrome.storage.sync.get(settingKeys, (loadedSettings) => {
         if (chrome.runtime.lastError) {
             console.error('Infor Enabler: Error loading settings:', chrome.runtime.lastError);
             return;
         }
-        // Set defaults to true if a setting is not defined
+        // Set defaults to true if a setting is not defined (enhanced paste defaults to false)
         settings = {
             enableCopy: loadedSettings.enableCopy !== false,
             enablePaste: loadedSettings.enablePaste !== false,
             enableSelectAll: loadedSettings.enableSelectAll !== false,
             enableFind: loadedSettings.enableFind !== false,
             enableUndo: loadedSettings.enableUndo !== false,
+            enableEnhancedPaste: loadedSettings.enableEnhancedPaste === true,
+            enhancedPastePrefix: typeof loadedSettings.enhancedPastePrefix === 'string' ? loadedSettings.enhancedPastePrefix : 'o00',
+            enhancedPasteStripAfterDash: loadedSettings.enhancedPasteStripAfterDash === true,
         };
-        console.log('Infor Enabler: Settings loaded and listeners active.', settings);
+        console.log('Infor Enabler: Settings loaded and active.', settings);
     });
 }
 
@@ -115,6 +127,62 @@ window.addEventListener('keydown', (event) => {
             undo(activeElement);
         }
         return;
+    }
+
+    // Handle Enhanced TWL Order Paste (Ctrl+O)
+    if (settings.enableEnhancedPaste && !event.shiftKey && key === 'o') {
+        const isEditable = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && !activeElement.readOnly && !activeElement.disabled;
+        if (isEditable) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            debugLog('Infor Enabler: Enhanced Paste (Ctrl+O) triggered.');
+
+            navigator.clipboard.readText().then((rawText) => {
+                if (!rawText) return;
+                let text = rawText.trim();
+                if (settings.enhancedPasteStripAfterDash) {
+                    text = text.split('-')[0];
+                } else {
+                    text = text.replace(/-/g, '');
+                }
+                const prefix = settings.enhancedPastePrefix || '';
+                const formattedText = prefix + text;
+
+                if (settings.enableUndo) {
+                    saveState(activeElement);
+                }
+
+                let inserted = false;
+                try {
+                    inserted = document.execCommand('insertText', false, formattedText);
+                } catch (e) {
+                    inserted = false;
+                }
+
+                if (!inserted && activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && !activeElement.readOnly && !activeElement.disabled) {
+                    const start = activeElement.selectionStart ?? activeElement.value.length;
+                    const end = activeElement.selectionEnd ?? activeElement.value.length;
+                    const val = activeElement.value;
+                    activeElement.value = val.substring(0, start) + formattedText + val.substring(end);
+                    activeElement.selectionStart = activeElement.selectionEnd = start + formattedText.length;
+                    inserted = true;
+                }
+
+                if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                    activeElement.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                    activeElement.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+                }
+
+                if (inserted) {
+                    debugLog(`Infor Enabler: Enhanced pasted order number: "${formattedText}"`);
+                } else {
+                    console.warn("Infor Enabler: Could not paste enhanced text into active element.");
+                }
+            }).catch((err) => {
+                console.warn('Infor Enabler: Failed to read clipboard for Enhanced Paste:', err);
+            });
+            return;
+        }
     }
 
     // Handle Copy (Ctrl+C), Cut (Ctrl+X), Paste (Ctrl+V), Select All (Ctrl+A), Find (Ctrl+F)
@@ -200,6 +268,15 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
             if (changes[key] !== undefined) {
                 settings[key] = changes[key].newValue !== false;
             }
+        }
+        if (changes.enableEnhancedPaste !== undefined) {
+            settings.enableEnhancedPaste = changes.enableEnhancedPaste.newValue === true;
+        }
+        if (changes.enhancedPastePrefix !== undefined) {
+            settings.enhancedPastePrefix = typeof changes.enhancedPastePrefix.newValue === 'string' ? changes.enhancedPastePrefix.newValue : 'o00';
+        }
+        if (changes.enhancedPasteStripAfterDash !== undefined) {
+            settings.enhancedPasteStripAfterDash = changes.enhancedPasteStripAfterDash.newValue === true;
         }
         debugLog('Infor Enabler: Settings updated dynamically.', settings);
     }

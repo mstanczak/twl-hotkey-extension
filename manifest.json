@@ -4,7 +4,8 @@
   "version": "1.1",
   "description": "Re-enables Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+A, and other hotkeys on Infor CloudSuite sites.",
   "permissions": [
-    "storage"
+    "storage",
+    "clipboardRead"
   ],
   "options_ui": {
     "page": "options.html",

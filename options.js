@@ -5,13 +5,20 @@ const featureCheckboxes = document.querySelectorAll('.feature-checkbox');
 const statusMessage = document.getElementById('status-message');
 const celebrationContainer = document.getElementById('celebration-container');
 
+// Enhanced Paste DOM Elements
+const enhancedPasteCheckbox = document.getElementById('feature-enhanced-paste');
+const enhancedPasteSuboptions = document.getElementById('enhanced-paste-suboptions');
+const enhancedPastePrefixInput = document.getElementById('enhanced-paste-prefix');
+const enhancedPasteStripSuffixCheckbox = document.getElementById('enhanced-paste-strip-suffix');
+
 // Maps the checkbox ID to the setting key in chrome.storage
 const featureMapping = {
     'feature-copy': 'enableCopy',
     'feature-paste': 'enablePaste',
     'feature-select-all': 'enableSelectAll',
     'feature-find': 'enableFind',
-    'feature-undo': 'enableUndo'
+    'feature-undo': 'enableUndo',
+    'feature-enhanced-paste': 'enableEnhancedPaste'
 };
 
 /**
@@ -25,6 +32,11 @@ function saveOptions() {
             settings[settingKey] = checkbox.checked;
         }
     });
+
+    // Save Enhanced Paste specific sub-options
+    const prefixValue = enhancedPastePrefixInput.value.trim();
+    settings.enhancedPastePrefix = prefixValue !== '' ? prefixValue : 'o00';
+    settings.enhancedPasteStripAfterDash = enhancedPasteStripSuffixCheckbox.checked;
 
     chrome.storage.sync.set(settings, () => {
         if (chrome.runtime.lastError) {
@@ -50,7 +62,11 @@ function saveOptions() {
  * Loads options from chrome.storage.sync and updates the UI.
  */
 function loadOptions() {
-    const settingKeys = Object.values(featureMapping);
+    const settingKeys = [
+        ...Object.values(featureMapping),
+        'enhancedPastePrefix',
+        'enhancedPasteStripAfterDash'
+    ];
     chrome.storage.sync.get(settingKeys, (settings) => {
         if (chrome.runtime.lastError) {
             console.error('Error loading options:', chrome.runtime.lastError);
@@ -67,8 +83,24 @@ function loadOptions() {
         document.getElementById('feature-find').checked = settings.enableFind !== false;
         document.getElementById('feature-undo').checked = settings.enableUndo !== false;
 
+        // Enhanced paste defaults to false, prefix to 'o00', strip suffix to false
+        enhancedPasteCheckbox.checked = settings.enableEnhancedPaste === true;
+        enhancedPastePrefixInput.value = typeof settings.enhancedPastePrefix === 'string' ? settings.enhancedPastePrefix : 'o00';
+        enhancedPasteStripSuffixCheckbox.checked = settings.enhancedPasteStripAfterDash === true;
+
+        updateSuboptionsState();
         updateSelectAllState();
     });
+}
+
+/**
+ * Updates the disabled/visibility state of the Enhanced Paste sub-options.
+ */
+function updateSuboptionsState() {
+    const isEnabled = enhancedPasteCheckbox.checked;
+    enhancedPasteSuboptions.classList.toggle('disabled', !isEnabled);
+    enhancedPastePrefixInput.disabled = !isEnabled;
+    enhancedPasteStripSuffixCheckbox.disabled = !isEnabled;
 }
 
 /**
@@ -88,6 +120,7 @@ function handleSelectAllChange() {
         checkbox.checked = isChecked;
     });
     updateSelectAllState();
+    updateSuboptionsState();
     triggerAnimation(isChecked);
 }
 
@@ -96,6 +129,9 @@ function handleSelectAllChange() {
  * @param {Event} event The DOM event object.
  */
 function handleFeatureChange(event) {
+    if (event.target === enhancedPasteCheckbox) {
+        updateSuboptionsState();
+    }
     updateSelectAllState();
     triggerAnimation(event.target.checked);
 }
