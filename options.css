@@ -275,8 +275,8 @@ fieldset {
     flex-wrap: wrap;
 }
 
-.text-input {
-    width: 6.5rem;
+.text-input,
+.select-input {
     padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 0.375rem;
@@ -287,7 +287,17 @@ fieldset {
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.text-input:focus {
+.text-input {
+    width: 6.5rem;
+}
+
+.select-input {
+    min-width: 14rem;
+    cursor: pointer;
+}
+
+.text-input:focus,
+.select-input:focus {
     outline: none;
     border-color: #2e64b0;
     box-shadow: 0 0 0 3px rgba(46, 100, 176, 0.2);

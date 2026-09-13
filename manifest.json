@@ -1,12 +1,22 @@
 {
   "manifest_version": 3,
   "name": "TWL Hotkey Enabler",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Re-enables standard keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+A, Ctrl+Z) and enhanced order pasting on TWL web interfaces.",
   "permissions": [
     "storage",
-    "clipboardRead"
+    "clipboardRead",
+    "contextMenus"
   ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "TWL Hotkey Enabler",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
@@ -14,9 +24,22 @@
   "background": {
     "service_worker": "background.js"
   },
+  "commands": {
+    "enhanced-paste": {
+      "suggested_key": {
+        "default": "Ctrl+O",
+        "mac": "Command+O"
+      },
+      "description": "Enhanced TWL Order Paste"
+    }
+  },
   "content_scripts": [
     {
-      "matches": ["https://*.inforcloudsuite.com/*"],
+      "matches": [
+        "https://*.inforcloudsuite.com/*",
+        "https://*.inforfederatedservice.com/*",
+        "https://*.aws.infor.com/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_start",
       "all_frames": true

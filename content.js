@@ -27,14 +27,16 @@ function initialize() {
         'enableUndo',
         'enableEnhancedPaste',
         'enhancedPastePrefix',
-        'enhancedPasteStripAfterDash'
+        'enhancedPasteStripAfterDash',
+        'showToastNotification',
+        'enhancedPasteAction'
     ];
     chrome.storage.sync.get(settingKeys, (loadedSettings) => {
         if (chrome.runtime.lastError) {
             console.error('TWL Enabler: Error loading settings:', chrome.runtime.lastError);
             return;
         }
-        // Set defaults to true if a setting is not defined (enhanced paste defaults to false)
+        // Set defaults
         settings = {
             enableCopy: loadedSettings.enableCopy !== false,
             enablePaste: loadedSettings.enablePaste !== false,
@@ -44,6 +46,8 @@ function initialize() {
             enableEnhancedPaste: loadedSettings.enableEnhancedPaste === true,
             enhancedPastePrefix: typeof loadedSettings.enhancedPastePrefix === 'string' ? loadedSettings.enhancedPastePrefix : 'o00',
             enhancedPasteStripAfterDash: loadedSettings.enhancedPasteStripAfterDash !== false,
+            showToastNotification: loadedSettings.showToastNotification !== false,
+            enhancedPasteAction: loadedSettings.enhancedPasteAction || 'none'
         };
         console.log('TWL Enabler: Settings loaded and active.', settings);
     });
@@ -95,6 +99,221 @@ function undo(element) {
     }
 }
 
+// --- Toast Notification UI ---
+
+let activeToast = null;
+let toastTimeout = null;
+
+/**
+ * Displays a non-intrusive toast notification in the bottom right corner of the screen.
+ * @param {string} message The message to display.
+ * @param {string} [type='info'] Notification type ('info', 'success', 'warning').
+ */
+function showToast(message, type = 'info') {
+    if (!settings.showToastNotification) return;
+
+    if (!activeToast) {
+        activeToast = document.createElement('div');
+        activeToast.id = 'twl-hotkey-toast';
+        activeToast.setAttribute('role', 'status');
+        activeToast.setAttribute('aria-live', 'polite');
+        activeToast.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2147483647;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: #ffffff;
+            background-color: #1e293b;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(12px) scale(0.96);
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 360px;
+        `;
+        document.documentElement.appendChild(activeToast);
+    }
+
+    // Indicator color accent
+    const accentColor = type === 'success' ? '#10b981' : (type === 'warning' ? '#f59e0b' : '#3b82f6');
+    activeToast.innerHTML = `
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${accentColor};flex-shrink:0;"></span>
+        <span>${message}</span>
+    `;
+
+    // Force reflow and show
+    void activeToast.offsetWidth;
+    activeToast.style.opacity = '1';
+    activeToast.style.transform = 'translateY(0) scale(1)';
+
+    if (toastTimeout) {
+        clearTimeout(toastTimeout);
+    }
+
+    toastTimeout = setTimeout(() => {
+        if (activeToast) {
+            activeToast.style.opacity = '0';
+            activeToast.style.transform = 'translateY(12px) scale(0.96)';
+        }
+    }, 2200);
+}
+
+// --- Post-Paste Action (Scanner Simulation: Enter / Tab) ---
+
+/**
+ * Performs optional post-paste action such as simulating Enter or focusing the next field.
+ * @param {HTMLElement} element The target input/textarea element.
+ */
+function handlePostPasteAction(element) {
+    if (!settings.enhancedPasteAction || settings.enhancedPasteAction === 'none' || !element) {
+        return;
+    }
+
+    if (settings.enhancedPasteAction === 'enter') {
+        debugLog('TWL Enabler: Simulating Enter key after paste.');
+        const enterInit = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
+        element.dispatchEvent(new KeyboardEvent('keydown', enterInit));
+        element.dispatchEvent(new KeyboardEvent('keypress', enterInit));
+        element.dispatchEvent(new KeyboardEvent('keyup', enterInit));
+
+        // If part of a form, check for standard submit button or trigger form submit
+        if (element.form) {
+            const submitBtn = element.form.querySelector('button[type="submit"], input[type="submit"]');
+            if (submitBtn) {
+                submitBtn.click();
+            }
+        }
+    } else if (settings.enhancedPasteAction === 'tab') {
+        debugLog('TWL Enabler: Simulating Tab focus progression after paste.');
+        const focusables = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+        const currentIndex = focusables.indexOf(element);
+        if (currentIndex !== -1 && currentIndex + 1 < focusables.length) {
+            focusables[currentIndex + 1].focus();
+        }
+    }
+}
+
+// --- Paste Execution Helpers ---
+
+/**
+ * Formats order number text per TWL rules.
+ * @param {string} rawText The raw clipboard string.
+ * @returns {string} Formatted TWL order number.
+ */
+function formatOrderNumber(rawText) {
+    let text = (rawText || '').trim();
+    if (settings.enhancedPasteStripAfterDash) {
+        text = text.split('-')[0];
+    } else {
+        text = text.replace(/-/g, '');
+    }
+    const prefix = settings.enhancedPastePrefix || '';
+    return prefix + text;
+}
+
+/**
+ * Inserts formatted text into an editable element and handles change dispatching and history.
+ * @param {HTMLInputElement|HTMLTextAreaElement} element Target element.
+ * @param {string} text Text to insert.
+ * @returns {boolean} True if insertion succeeded.
+ */
+function insertTextIntoElement(element, text) {
+    if (!element) return false;
+
+    if (settings.enableUndo) {
+        saveState(element);
+    }
+
+    let inserted = false;
+    try {
+        inserted = document.execCommand('insertText', false, text);
+    } catch (e) {
+        inserted = false;
+    }
+
+    if (!inserted && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && !element.readOnly && !element.disabled) {
+        const start = element.selectionStart ?? element.value.length;
+        const end = element.selectionEnd ?? element.value.length;
+        const val = element.value;
+        element.value = val.substring(0, start) + text + val.substring(end);
+        element.selectionStart = element.selectionEnd = start + text.length;
+        inserted = true;
+    }
+
+    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+        element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+    }
+
+    return inserted;
+}
+
+/**
+ * Performs an Enhanced TWL Order Paste into the specified or active element.
+ * @param {HTMLElement} [targetElement] Optional explicit target element.
+ */
+function performEnhancedPaste(targetElement) {
+    const el = targetElement || document.activeElement;
+    const isEditable = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.readOnly && !el.disabled;
+
+    if (!isEditable) {
+        showToast('Click an input field first to paste order', 'warning');
+        return;
+    }
+
+    navigator.clipboard.readText().then((rawText) => {
+        if (!rawText) {
+            showToast('Clipboard is empty', 'warning');
+            return;
+        }
+
+        const formattedText = formatOrderNumber(rawText);
+        const success = insertTextIntoElement(el, formattedText);
+
+        if (success) {
+            debugLog(`TWL Enabler: Enhanced pasted order number: "${formattedText}"`);
+            showToast(`Pasted TWL Order: ${formattedText}`, 'success');
+            handlePostPasteAction(el);
+        } else {
+            console.warn("TWL Enabler: Could not paste enhanced text into active element.");
+        }
+    }).catch((err) => {
+        console.warn('TWL Enabler: Failed to read clipboard for Enhanced Paste:', err);
+        showToast('Clipboard access denied or unavailable', 'warning');
+    });
+}
+
+/**
+ * Performs a standard Trimmed Paste into the specified or active element.
+ * @param {HTMLElement} [targetElement] Optional explicit target element.
+ */
+function performTrimmedPaste(targetElement) {
+    const el = targetElement || document.activeElement;
+    const isEditable = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.readOnly && !el.disabled;
+
+    if (!isEditable) return;
+
+    navigator.clipboard.readText().then((rawText) => {
+        if (!rawText) return;
+        const text = rawText.trim();
+        const success = insertTextIntoElement(el, text);
+        if (success) {
+            debugLog(`TWL Enabler: Pasted trimmed text: "${text}"`);
+        }
+    }).catch((err) => {
+        console.warn('TWL Enabler: Failed to read clipboard for Trimmed Paste:', err);
+    });
+}
+
 // --- Event Listeners Attached to window (Highest Capture Priority) ---
 
 // Use 'focusin' and 'input' on window to manage state for the Undo feature.
@@ -135,52 +354,8 @@ window.addEventListener('keydown', (event) => {
         if (isEditable) {
             event.preventDefault();
             event.stopImmediatePropagation();
-            debugLog('TWL Enabler: Enhanced Paste (Ctrl+O) triggered.');
-
-            navigator.clipboard.readText().then((rawText) => {
-                if (!rawText) return;
-                let text = rawText.trim();
-                if (settings.enhancedPasteStripAfterDash) {
-                    text = text.split('-')[0];
-                } else {
-                    text = text.replace(/-/g, '');
-                }
-                const prefix = settings.enhancedPastePrefix || '';
-                const formattedText = prefix + text;
-
-                if (settings.enableUndo) {
-                    saveState(activeElement);
-                }
-
-                let inserted = false;
-                try {
-                    inserted = document.execCommand('insertText', false, formattedText);
-                } catch (e) {
-                    inserted = false;
-                }
-
-                if (!inserted && activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && !activeElement.readOnly && !activeElement.disabled) {
-                    const start = activeElement.selectionStart ?? activeElement.value.length;
-                    const end = activeElement.selectionEnd ?? activeElement.value.length;
-                    const val = activeElement.value;
-                    activeElement.value = val.substring(0, start) + formattedText + val.substring(end);
-                    activeElement.selectionStart = activeElement.selectionEnd = start + formattedText.length;
-                    inserted = true;
-                }
-
-                if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-                    activeElement.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                    activeElement.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-                }
-
-                if (inserted) {
-                    debugLog(`TWL Enabler: Enhanced pasted order number: "${formattedText}"`);
-                } else {
-                    console.warn("TWL Enabler: Could not paste enhanced text into active element.");
-                }
-            }).catch((err) => {
-                console.warn('TWL Enabler: Failed to read clipboard for Enhanced Paste:', err);
-            });
+            debugLog('TWL Enabler: Enhanced Paste (Ctrl+O) triggered via keyboard.');
+            performEnhancedPaste(activeElement);
             return;
         }
     }
@@ -226,39 +401,27 @@ window.addEventListener('paste', (event) => {
 
         const rawText = (event.clipboardData || window.clipboardData)?.getData('text/plain') || '';
         const text = rawText.trim();
-
-        let inserted = false;
-        try {
-            inserted = document.execCommand("insertText", false, text);
-        } catch (e) {
-            inserted = false;
-        }
-
         const activeElement = document.activeElement;
 
-        // Fallback for custom or shadow inputs where execCommand fails
-        if (!inserted && activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && !activeElement.readOnly && !activeElement.disabled) {
-            const start = activeElement.selectionStart ?? activeElement.value.length;
-            const end = activeElement.selectionEnd ?? activeElement.value.length;
-            const val = activeElement.value;
-            activeElement.value = val.substring(0, start) + text + val.substring(end);
-            activeElement.selectionStart = activeElement.selectionEnd = start + text.length;
-            inserted = true;
-        }
-
-        // Dispatch synthetic events so page components update their internal models
-        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-            activeElement.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-            activeElement.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-        }
-
-        if (inserted) {
-            debugLog(`TWL Enabler: Pasted trimmed text: "${text}"`);
-        } else {
-            console.warn("TWL Enabler: Could not paste text into active element.");
-        }
+        insertTextIntoElement(activeElement, text);
+        debugLog(`TWL Enabler: Pasted trimmed text: "${text}"`);
     }
 }, true);
+
+// Listen for messages from background script (Context menu clicks & Commands)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (!message || !message.action) return;
+
+    if (message.action === 'context-menu-paste-order' || message.action === 'trigger-enhanced-paste') {
+        performEnhancedPaste();
+        sendResponse({ success: true });
+    } else if (message.action === 'context-menu-paste-trimmed') {
+        performTrimmedPaste();
+        sendResponse({ success: true });
+    } else if (message.action === 'ping-status') {
+        sendResponse({ active: true, settings });
+    }
+});
 
 // Listen for changes from the options page to apply settings in real time without refreshing
 chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -277,6 +440,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         }
         if (changes.enhancedPasteStripAfterDash !== undefined) {
             settings.enhancedPasteStripAfterDash = changes.enhancedPasteStripAfterDash.newValue !== false;
+        }
+        if (changes.showToastNotification !== undefined) {
+            settings.showToastNotification = changes.showToastNotification.newValue !== false;
+        }
+        if (changes.enhancedPasteAction !== undefined) {
+            settings.enhancedPasteAction = changes.enhancedPasteAction.newValue || 'none';
         }
         debugLog('TWL Enabler: Settings updated dynamically.', settings);
     }

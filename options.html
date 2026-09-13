@@ -166,10 +166,30 @@
                                 <label for="enhanced-paste-strip-suffix" class="sub-option-item">
                                     <input type="checkbox" id="enhanced-paste-strip-suffix" class="checkbox" checked>
                                     <span class="option-text">
-                                        <span class="sub-option-title">Strip dash and everything after it (e.g., converts '12345-01' to '12345')</span>
+                                        <span class="option-title">Strip dash and everything after it (e.g., converts '12345-01' to '12345')</span>
                                         <span class="option-description">Default behavior. If unchecked, all dashes are removed while keeping subsequent numbers (e.g., '12345-01' becomes '1234501').</span>
                                     </span>
                                 </label>
+
+                                <label for="show-toast-notification" class="sub-option-item">
+                                    <input type="checkbox" id="show-toast-notification" class="checkbox" checked>
+                                    <span class="option-text">
+                                        <span class="sub-option-title">Show visual confirmation toast on paste</span>
+                                        <span class="option-description">Displays a subtle popup message when an order number is formatted and pasted.</span>
+                                    </span>
+                                </label>
+
+                                <div class="sub-option-field">
+                                    <label for="enhanced-paste-action" class="sub-option-label">Post-Paste Scanner Simulation</label>
+                                    <div class="input-with-hint">
+                                        <select id="enhanced-paste-action" class="select-input">
+                                            <option value="none">None (keep focus in field)</option>
+                                            <option value="enter">Simulate Enter key (submit / search)</option>
+                                            <option value="tab">Simulate Tab key (move to next field)</option>
+                                        </select>
+                                        <span class="sub-option-hint">Automates barcode scanner behavior after order paste.</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

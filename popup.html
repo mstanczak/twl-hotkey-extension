@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TWL Hotkey Enabler</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <header class="popup-header">
+            <div class="header-branding">
+                <span class="app-icon">⌨️</span>
+                <div>
+                    <h1 class="popup-title">TWL Hotkeys</h1>
+                    <span class="popup-version">v1.2</span>
+                </div>
+            </div>
+            <div id="status-pill" class="status-pill inactive">
+                <span class="status-dot"></span>
+                <span id="status-text">Checking...</span>
+            </div>
+        </header>
+
+        <!-- Quick Toggles -->
+        <section class="quick-section">
+            <div class="section-heading">Quick Controls</div>
+            <div class="quick-toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-name">Standard Hotkeys</span>
+                    <span class="toggle-desc">Ctrl+C, V, A, Z, F</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-standard-hotkeys" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="quick-toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-name">Enhanced Order Paste</span>
+                    <span class="toggle-desc">Ctrl+O formats order number</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-enhanced-paste">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </section>
+
+        <!-- Clipboard Preview Box -->
+        <section class="preview-section" id="preview-section">
+            <div class="section-heading">Clipboard Order Preview</div>
+            <div class="preview-box">
+                <div class="preview-row">
+                    <span class="preview-label">Raw:</span>
+                    <code id="preview-raw" class="preview-code">None</code>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Formatted:</span>
+                    <code id="preview-formatted" class="preview-code-formatted">--</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer Actions -->
+        <footer class="popup-footer">
+            <button id="btn-open-options" class="footer-btn secondary-btn">
+                <span>⚙️ Full Settings</span>
+            </button>
+            <button id="btn-shortcuts" class="footer-btn link-btn" title="Customize Chrome Keyboard Shortcuts">
+                <span>⌨️ Shortcuts</span>
+            </button>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

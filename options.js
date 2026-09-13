@@ -11,6 +11,8 @@ const enhancedPasteCheckbox = document.getElementById('feature-enhanced-paste');
 const enhancedPasteSuboptions = document.getElementById('enhanced-paste-suboptions');
 const enhancedPastePrefixInput = document.getElementById('enhanced-paste-prefix');
 const enhancedPasteStripSuffixCheckbox = document.getElementById('enhanced-paste-strip-suffix');
+const showToastNotificationCheckbox = document.getElementById('show-toast-notification');
+const enhancedPasteActionSelect = document.getElementById('enhanced-paste-action');
 
 // Maps the checkbox ID to the setting key in chrome.storage
 const featureMapping = {
@@ -38,6 +40,8 @@ function saveOptions() {
     const prefixValue = enhancedPastePrefixInput.value.trim();
     settings.enhancedPastePrefix = prefixValue !== '' ? prefixValue : 'o00';
     settings.enhancedPasteStripAfterDash = enhancedPasteStripSuffixCheckbox.checked;
+    settings.showToastNotification = showToastNotificationCheckbox.checked;
+    settings.enhancedPasteAction = enhancedPasteActionSelect.value;
 
     chrome.storage.sync.set(settings, () => {
         if (chrome.runtime.lastError) {
@@ -66,7 +70,9 @@ function loadOptions() {
     const settingKeys = [
         ...Object.values(featureMapping),
         'enhancedPastePrefix',
-        'enhancedPasteStripAfterDash'
+        'enhancedPasteStripAfterDash',
+        'showToastNotification',
+        'enhancedPasteAction'
     ];
     chrome.storage.sync.get(settingKeys, (settings) => {
         if (chrome.runtime.lastError) {
@@ -88,6 +94,8 @@ function loadOptions() {
         enhancedPasteCheckbox.checked = settings.enableEnhancedPaste === true;
         enhancedPastePrefixInput.value = typeof settings.enhancedPastePrefix === 'string' ? settings.enhancedPastePrefix : 'o00';
         enhancedPasteStripSuffixCheckbox.checked = settings.enhancedPasteStripAfterDash !== false;
+        showToastNotificationCheckbox.checked = settings.showToastNotification !== false;
+        enhancedPasteActionSelect.value = settings.enhancedPasteAction || 'none';
 
         // Automatically expand advanced panel if enhanced paste is currently enabled
         if (advancedPanel && settings.enableEnhancedPaste === true) {
@@ -107,6 +115,8 @@ function updateSuboptionsState() {
     enhancedPasteSuboptions.classList.toggle('disabled', !isEnabled);
     enhancedPastePrefixInput.disabled = !isEnabled;
     enhancedPasteStripSuffixCheckbox.disabled = !isEnabled;
+    showToastNotificationCheckbox.disabled = !isEnabled;
+    enhancedPasteActionSelect.disabled = !isEnabled;
 }
 
 /**
