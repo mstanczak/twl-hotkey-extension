@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infor Enabler Options</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+
+    <!-- Animation Container -->
+    <div id="celebration-container">
+        <!-- SVG spirits will be injected here by JavaScript -->
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <header>
+                <!-- New SVG "Ctrl T W L" Keys Logo -->
+                <div class="logo-container">
+                    <svg class="header-logo" width="190" height="80" viewBox="0 0 150 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <!-- Filter for the drop shadow -->
+                            <filter id="drop-shadow" x="-0.3" y="-0.3" width="1.6" height="1.6">
+                                <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                                <feOffset dx="2" dy="2" result="offsetblur"/>
+                                <feComponentTransfer>
+                                    <feFuncA type="linear" slope="0.5"/>
+                                </feComponentTransfer>
+                                <feMerge>
+                                    <feMergeNode/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                            <!-- Gradient for the orange Ctrl key -->
+                            <linearGradient id="ctrl-grad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ff8a65"/>
+                                <stop offset="100%" stop-color="#ff7043"/>
+                            </linearGradient>
+                             <!-- Gradient for the white keys -->
+                            <linearGradient id="key-grad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ffffff"/>
+                                <stop offset="100%" stop-color="#e0e0e0"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Base of the keyboard -->
+                        <rect x="5" y="10" width="140" height="40" rx="8" fill="#424242" filter="url(#drop-shadow)"/>
+                        <rect x="8" y="13" width="134" height="34" rx="5" fill="#212121"/>
+
+                        <!-- Ctrl Key -->
+                        <rect x="12" y="16" width="30" height="28" rx="4" fill="url(#ctrl-grad)" />
+                        <text x="27" y="34" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="white" text-anchor="middle">Ctrl</text>
+
+                        <!-- T Key -->
+                        <rect x="46" y="16" width="28" height="28" rx="4" fill="url(#key-grad)" />
+                        <text x="60" y="34" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#424242" text-anchor="middle">T</text>
+
+                        <!-- W Key -->
+                        <rect x="78" y="16" width="28" height="28" rx="4" fill="url(#key-grad)" />
+                        <text x="92" y="34" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#424242" text-anchor="middle">W</text>
+
+                        <!-- L Key -->
+                        <rect x="110" y="16" width="28" height="28" rx="4" fill="url(#key-grad)" />
+                        <text x="124" y="34" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#424242" text-anchor="middle">L</text>
+                    </svg>
+                </div>
+                <!-- Title updated with extension name and summary -->
+                <h1>Infor TWL H5 Hotkey Extension</h1>
+                <p>This extension re-enables disabled keyboard shortcuts like Ctrl+C, Ctrl+V, Ctrl+A, and Ctrl+F on CSD-TWL hosted websites.</p>
+            </header>
+
+            <form id="options-form">
+                <!-- Select All Option -->
+                <div class="select-all-container">
+                    <label for="select-all" class="select-all-label">
+                        <input type="checkbox" id="select-all" class="checkbox">
+                        <span>Select All Features</span>
+                    </label>
+                </div>
+
+                <!-- Individual Feature Options -->
+                <fieldset id="features">
+                    <legend class="sr-only">Features</legend>
+                    
+                    <label for="feature-copy" class="option-item">
+                        <input type="checkbox" id="feature-copy" name="feature" value="copy" class="feature-checkbox checkbox">
+                        <span class="option-text">
+                            <span class="option-title">Enable Smart Copy (Ctrl+C)</span>
+                            <span class="option-description">Re-enables the copy shortcut.</span>
+                        </span>
+                    </label>
+
+                    <label for="feature-paste" class="option-item">
+                        <input type="checkbox" id="feature-paste" name="feature" value="paste" class="feature-checkbox checkbox">
+                        <span class="option-text">
+                            <span class="option-title">Enable Smart Paste (Ctrl+V)</span>
+                            <span class="option-description">Re-enables the paste shortcut and trims whitespace.</span>
+                        </span>
+                    </label>
+
+                    <label for="feature-select-all" class="option-item">
+                        <input type="checkbox" id="feature-select-all" name="feature" value="selectAll" class="feature-checkbox checkbox">
+                        <span class="option-text">
+                            <span class="option-title">Enable Select All (Ctrl+A)</span>
+                            <span class="option-description">Re-enables the select all shortcut.</span>
+                        </span>
+                    </label>
+
+                    <!-- Added Ctrl+F Find Option -->
+                    <label for="feature-find" class="option-item">
+                        <input type="checkbox" id="feature-find" name="feature" value="find" class="feature-checkbox checkbox">
+                        <span class="option-text">
+                            <span class="option-title">Enable Smart Find (Ctrl+F)</span>
+                            <span class="option-description">Re-enables the find shortcut.</span>
+                        </span>
+                    </label>
+
+                </fieldset>
+
+                <!-- Added Save Button -->
+                <button type="submit" id="save-btn" class="save-button">Save Settings</button>
+            </form>
+            
+            <div id="status-message"></div>
+
+            <!-- Added Refresh Note -->
+            <p class="refresh-note">
+                <strong>Note:</strong> Please refresh any open CSD/TWL for the new settings to take effect.
+            </p>
+        </div>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>
