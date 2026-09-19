@@ -143,31 +143,69 @@
                     <div class="advanced-content">
                         <p class="advanced-description">Specialized order number formatting for ERP &rarr; TWL workflows.</p>
 
-                        <!-- Enhanced TWL Order Paste (Ctrl+O) Option -->
+                        <!-- Enhanced TWL Order Formatting Types -->
                         <div class="feature-group">
-                            <label for="feature-enhanced-paste" class="option-item option-item-subtle">
-                                <input type="checkbox" id="feature-enhanced-paste" name="feature" value="enhancedPaste" class="feature-checkbox checkbox">
-                                <span class="option-text">
-                                    <span class="option-title">Enable Enhanced TWL Order Paste (Ctrl+O)</span>
-                                    <span class="option-description">Formats copied order numbers to TWL format upon paste.</span>
-                                </span>
-                            </label>
-
-                            <!-- Nested sub-options container -->
-                            <div id="enhanced-paste-suboptions" class="sub-options-container">
-                                <div class="sub-option-field">
-                                    <label for="enhanced-paste-prefix" class="sub-option-label">TWL Prefix</label>
+                            <!-- Sales Order (Ctrl+O) -->
+                            <div class="paste-type-card">
+                                <label for="feature-enhanced-paste" class="option-item option-item-subtle">
+                                    <input type="checkbox" id="feature-enhanced-paste" name="feature" value="enhancedPaste" class="feature-checkbox checkbox">
+                                    <span class="option-text">
+                                        <span class="option-title">Enable Sales Order Paste (Ctrl+O)</span>
+                                        <span class="option-description">Formats copied order numbers with TWL order prefix upon paste.</span>
+                                    </span>
+                                </label>
+                                <div class="sub-option-field prefix-field">
+                                    <label for="enhanced-paste-prefix" class="sub-option-label">Order Prefix</label>
                                     <div class="input-with-hint">
                                         <input type="text" id="enhanced-paste-prefix" class="text-input" placeholder="o00" value="o00" maxlength="15">
-                                        <span class="sub-option-hint">Prepended to the order number (default: o00).</span>
+                                        <span class="sub-option-hint">Prepended to order numbers (default: o00).</span>
                                     </div>
                                 </div>
+                            </div>
 
+                            <!-- Purchase Order (Ctrl+P) -->
+                            <div class="paste-type-card">
+                                <label for="feature-enhanced-paste-po" class="option-item option-item-subtle">
+                                    <input type="checkbox" id="feature-enhanced-paste-po" name="feature" value="enhancedPastePO" class="feature-checkbox checkbox">
+                                    <span class="option-text">
+                                        <span class="option-title">Enable Purchase Order Paste (Ctrl+P)</span>
+                                        <span class="option-description">Formats copied PO numbers with TWL purchase order prefix upon paste.</span>
+                                    </span>
+                                </label>
+                                <div class="sub-option-field prefix-field">
+                                    <label for="enhanced-paste-po-prefix" class="sub-option-label">PO Prefix</label>
+                                    <div class="input-with-hint">
+                                        <input type="text" id="enhanced-paste-po-prefix" class="text-input" placeholder="p00" value="p00" maxlength="15">
+                                        <span class="sub-option-hint">Prepended to PO numbers (default: p00).</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Warehouse Transfer (Ctrl+W) -->
+                            <div class="paste-type-card">
+                                <label for="feature-enhanced-paste-transfer" class="option-item option-item-subtle">
+                                    <input type="checkbox" id="feature-enhanced-paste-transfer" name="feature" value="enhancedPasteTransfer" class="feature-checkbox checkbox">
+                                    <span class="option-text">
+                                        <span class="option-title">Enable Warehouse Transfer Paste (Ctrl+W)</span>
+                                        <span class="option-description">Formats copied transfer numbers with TWL transfer prefix upon paste.</span>
+                                    </span>
+                                </label>
+                                <div class="sub-option-field prefix-field">
+                                    <label for="enhanced-paste-transfer-prefix" class="sub-option-label">Transfer Prefix</label>
+                                    <div class="input-with-hint">
+                                        <input type="text" id="enhanced-paste-transfer-prefix" class="text-input" placeholder="t00" value="t00" maxlength="15">
+                                        <span class="sub-option-hint">Prepended to transfer numbers (default: t00).</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nested shared sub-options container -->
+                            <div id="enhanced-paste-suboptions" class="sub-options-container">
                                 <label for="enhanced-paste-strip-suffix" class="sub-option-item">
                                     <input type="checkbox" id="enhanced-paste-strip-suffix" class="checkbox" checked>
                                     <span class="option-text">
                                         <span class="option-title">Strip dash and everything after it (e.g., converts '12345-01' to '12345')</span>
-                                        <span class="option-description">Default behavior. If unchecked, all dashes are removed while keeping subsequent numbers (e.g., '12345-01' becomes '1234501').</span>
+                                        <span class="option-description">Default behavior. If unchecked, all dashes are removed while keeping subsequent numbers.</span>
                                     </span>
                                 </label>
 
@@ -175,7 +213,7 @@
                                     <input type="checkbox" id="show-toast-notification" class="checkbox" checked>
                                     <span class="option-text">
                                         <span class="sub-option-title">Show visual confirmation toast on paste</span>
-                                        <span class="option-description">Displays a subtle popup message when an order number is formatted and pasted.</span>
+                                        <span class="option-description">Displays a subtle popup message when an order, PO, or transfer number is formatted and pasted.</span>
                                     </span>
                                 </label>
 

@@ -27,6 +27,10 @@ function initialize() {
         'enableUndo',
         'enableEnhancedPaste',
         'enhancedPastePrefix',
+        'enableEnhancedPastePO',
+        'enhancedPastePOPrefix',
+        'enableEnhancedPasteTransfer',
+        'enhancedPasteTransferPrefix',
         'enhancedPasteStripAfterDash',
         'showToastNotification',
         'enhancedPasteAction'
@@ -45,6 +49,10 @@ function initialize() {
             enableUndo: loadedSettings.enableUndo !== false,
             enableEnhancedPaste: loadedSettings.enableEnhancedPaste === true,
             enhancedPastePrefix: typeof loadedSettings.enhancedPastePrefix === 'string' ? loadedSettings.enhancedPastePrefix : 'o00',
+            enableEnhancedPastePO: loadedSettings.enableEnhancedPastePO !== undefined ? loadedSettings.enableEnhancedPastePO === true : (loadedSettings.enableEnhancedPaste === true),
+            enhancedPastePOPrefix: typeof loadedSettings.enhancedPastePOPrefix === 'string' ? loadedSettings.enhancedPastePOPrefix : 'p00',
+            enableEnhancedPasteTransfer: loadedSettings.enableEnhancedPasteTransfer !== undefined ? loadedSettings.enableEnhancedPasteTransfer === true : (loadedSettings.enableEnhancedPaste === true),
+            enhancedPasteTransferPrefix: typeof loadedSettings.enhancedPasteTransferPrefix === 'string' ? loadedSettings.enhancedPasteTransferPrefix : 't00',
             enhancedPasteStripAfterDash: loadedSettings.enhancedPasteStripAfterDash !== false,
             showToastNotification: loadedSettings.showToastNotification !== false,
             enhancedPasteAction: loadedSettings.enhancedPasteAction || 'none'
@@ -351,17 +359,45 @@ function handlePostPasteAction(element) {
  * @param {string} rawText The raw clipboard string.
  * @returns {string} Formatted TWL order number.
  */
-function formatOrderNumber(rawText) {
+/**
+ * Formats order number text per TWL rules (supporting Sales Orders, POs, and Transfers).
+ * @param {string} rawText The raw clipboard string.
+ * @param {string} [type='order'] Formatting type ('order', 'po', 'transfer').
+ * @returns {string} Formatted TWL number.
+ */
+function formatOrderNumber(rawText, type = 'order') {
     let text = (rawText || '').trim();
+    if (!text) return '';
+
+    let prefix = settings.enhancedPastePrefix || 'o00';
+    if (type === 'po') {
+        prefix = settings.enhancedPastePOPrefix || 'p00';
+    } else if (type === 'transfer') {
+        prefix = settings.enhancedPasteTransferPrefix || 't00';
+    }
+
+    // Strip any existing known TWL prefix before prepending the desired one
+    const knownPrefixes = [
+        settings.enhancedPastePrefix,
+        settings.enhancedPastePOPrefix,
+        settings.enhancedPasteTransferPrefix,
+        'o00', 'p00', 't00'
+    ].filter(Boolean);
+
+    for (const p of knownPrefixes) {
+        if (text.toLowerCase().startsWith(p.toLowerCase())) {
+            text = text.slice(p.length).trim();
+            break;
+        }
+    }
+
+    // Handle dash according to user preference
     if (settings.enhancedPasteStripAfterDash) {
         text = text.split('-')[0].trim();
     } else {
         text = text.replace(/-/g, '').trim();
     }
-    const prefix = settings.enhancedPastePrefix || '';
-    if (prefix && text.toLowerCase().startsWith(prefix.toLowerCase())) {
-        return prefix + text.slice(prefix.length);
-    }
+
     return prefix + text;
 }
 
@@ -446,15 +482,16 @@ function insertTextIntoElement(element, text) {
 }
 
 /**
- * Performs an Enhanced TWL Order Paste into the specified or active element.
+ * Performs an Enhanced TWL Order, PO, or Transfer Paste into the specified or active element.
+ * @param {string} [type='order'] Type ('order', 'po', 'transfer').
  * @param {HTMLElement} [targetElement] Optional explicit target element.
  */
-function performEnhancedPaste(targetElement) {
+function performEnhancedPaste(type = 'order', targetElement) {
     const el = resolveEditableElement(targetElement) || resolveEditableElement(getActiveElement());
     const isEditable = isEditableElement(el);
 
     if (!isEditable) {
-        showToast('Click an input field first to paste order', 'warning');
+        showToast('Click an input field first to paste', 'warning');
         return;
     }
 
@@ -466,12 +503,13 @@ function performEnhancedPaste(targetElement) {
             return;
         }
 
-        const formattedText = formatOrderNumber(rawText);
+        const formattedText = formatOrderNumber(rawText, type);
         const success = insertTextIntoElement(el, formattedText);
 
         if (success) {
-            debugLog(`TWL Enabler: Enhanced pasted order number: "${formattedText}"`);
-            showToast(`Pasted TWL Order: ${formattedText}`, 'success');
+            const label = type === 'po' ? 'TWL PO' : (type === 'transfer' ? 'TWL Transfer' : 'TWL Order');
+            debugLog(`TWL Enabler: Enhanced pasted ${label}: "${formattedText}"`);
+            showToast(`Pasted ${label}: ${formattedText}`, 'success');
             handlePostPasteAction(el);
         } else {
             console.warn("TWL Enabler: Could not paste enhanced text into active element.");
@@ -546,13 +584,35 @@ window.addEventListener('keydown', (event) => {
         return;
     }
 
-    // Handle Enhanced TWL Order Paste (Ctrl+O)
+    // Handle Enhanced TWL Sales Order Paste (Ctrl+O)
     if (settings.enableEnhancedPaste && !event.shiftKey && key === 'o') {
         if (activeElement && isEditableElement(activeElement)) {
             event.preventDefault();
             event.stopImmediatePropagation();
-            debugLog('TWL Enabler: Enhanced Paste (Ctrl+O) triggered via keyboard.');
-            performEnhancedPaste(activeElement);
+            debugLog('TWL Enabler: Enhanced Order Paste (Ctrl+O) triggered via keyboard.');
+            performEnhancedPaste('order', activeElement);
+            return;
+        }
+    }
+
+    // Handle Enhanced TWL Purchase Order Paste (Ctrl+P)
+    if (settings.enableEnhancedPastePO && !event.shiftKey && key === 'p') {
+        if (activeElement && isEditableElement(activeElement)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            debugLog('TWL Enabler: Enhanced PO Paste (Ctrl+P) triggered via keyboard.');
+            performEnhancedPaste('po', activeElement);
+            return;
+        }
+    }
+
+    // Handle Enhanced TWL Warehouse Transfer Paste (Ctrl+W)
+    if (settings.enableEnhancedPasteTransfer && !event.shiftKey && key === 'w') {
+        if (activeElement && isEditableElement(activeElement)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            debugLog('TWL Enabler: Enhanced Transfer Paste (Ctrl+W) triggered via keyboard.');
+            performEnhancedPaste('transfer', activeElement);
             return;
         }
     }
@@ -634,7 +694,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || !message.action) return;
 
     if (message.action === 'context-menu-paste-order' || message.action === 'trigger-enhanced-paste') {
-        performEnhancedPaste();
+        performEnhancedPaste('order');
+        sendResponse({ success: true });
+    } else if (message.action === 'context-menu-paste-po') {
+        performEnhancedPaste('po');
+        sendResponse({ success: true });
+    } else if (message.action === 'context-menu-paste-transfer') {
+        performEnhancedPaste('transfer');
         sendResponse({ success: true });
     } else if (message.action === 'context-menu-paste-trimmed') {
         performTrimmedPaste();
@@ -658,6 +724,18 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         }
         if (changes.enhancedPastePrefix !== undefined) {
             settings.enhancedPastePrefix = typeof changes.enhancedPastePrefix.newValue === 'string' ? changes.enhancedPastePrefix.newValue : 'o00';
+        }
+        if (changes.enableEnhancedPastePO !== undefined) {
+            settings.enableEnhancedPastePO = changes.enableEnhancedPastePO.newValue === true;
+        }
+        if (changes.enhancedPastePOPrefix !== undefined) {
+            settings.enhancedPastePOPrefix = typeof changes.enhancedPastePOPrefix.newValue === 'string' ? changes.enhancedPastePOPrefix.newValue : 'p00';
+        }
+        if (changes.enableEnhancedPasteTransfer !== undefined) {
+            settings.enableEnhancedPasteTransfer = changes.enableEnhancedPasteTransfer.newValue === true;
+        }
+        if (changes.enhancedPasteTransferPrefix !== undefined) {
+            settings.enhancedPasteTransferPrefix = typeof changes.enhancedPasteTransferPrefix.newValue === 'string' ? changes.enhancedPasteTransferPrefix.newValue : 't00';
         }
         if (changes.enhancedPasteStripAfterDash !== undefined) {
             settings.enhancedPasteStripAfterDash = changes.enhancedPasteStripAfterDash.newValue !== false;

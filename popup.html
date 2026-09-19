@@ -38,11 +38,31 @@
             </div>
             <div class="quick-toggle-row">
                 <div class="toggle-info">
-                    <span class="toggle-name">Enhanced Order Paste</span>
-                    <span class="toggle-desc">Ctrl+O formats order number</span>
+                    <span class="toggle-name">Order Paste</span>
+                    <span class="toggle-desc">Ctrl+O formats order</span>
                 </div>
                 <label class="switch">
                     <input type="checkbox" id="toggle-enhanced-paste" aria-label="Toggle enhanced TWL order paste">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="quick-toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-name">PO Paste</span>
+                    <span class="toggle-desc">Ctrl+P formats purchase order</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-enhanced-paste-po" aria-label="Toggle enhanced TWL purchase order paste">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="quick-toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-name">Transfer Paste</span>
+                    <span class="toggle-desc">Ctrl+W formats warehouse transfer</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-enhanced-paste-transfer" aria-label="Toggle enhanced TWL warehouse transfer paste">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -50,15 +70,23 @@
 
         <!-- Clipboard Preview Box -->
         <section class="preview-section" id="preview-section">
-            <div class="section-heading">Clipboard Order Preview</div>
+            <div class="section-heading">Clipboard Format Preview</div>
             <div class="preview-box">
                 <div class="preview-row">
                     <span class="preview-label">Raw:</span>
                     <code id="preview-raw" class="preview-code">None</code>
                 </div>
                 <div class="preview-row">
-                    <span class="preview-label">Formatted:</span>
+                    <span class="preview-label">Order:</span>
                     <code id="preview-formatted" class="preview-code-formatted">--</code>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">PO:</span>
+                    <code id="preview-po" class="preview-code-formatted">--</code>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Transfer:</span>
+                    <code id="preview-transfer" class="preview-code-formatted">--</code>
                 </div>
             </div>
         </section>

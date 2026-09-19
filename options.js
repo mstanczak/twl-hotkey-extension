@@ -12,6 +12,10 @@ const advancedPanel = document.getElementById('advanced-panel');
 const enhancedPasteCheckbox = document.getElementById('feature-enhanced-paste');
 const enhancedPasteSuboptions = document.getElementById('enhanced-paste-suboptions');
 const enhancedPastePrefixInput = document.getElementById('enhanced-paste-prefix');
+const enhancedPastePOCheckbox = document.getElementById('feature-enhanced-paste-po');
+const enhancedPastePOPrefixInput = document.getElementById('enhanced-paste-po-prefix');
+const enhancedPasteTransferCheckbox = document.getElementById('feature-enhanced-paste-transfer');
+const enhancedPasteTransferPrefixInput = document.getElementById('enhanced-paste-transfer-prefix');
 const enhancedPasteStripSuffixCheckbox = document.getElementById('enhanced-paste-strip-suffix');
 const showToastNotificationCheckbox = document.getElementById('show-toast-notification');
 const enhancedPasteActionSelect = document.getElementById('enhanced-paste-action');
@@ -23,7 +27,9 @@ const featureMapping = {
     'feature-select-all': 'enableSelectAll',
     'feature-find': 'enableFind',
     'feature-undo': 'enableUndo',
-    'feature-enhanced-paste': 'enableEnhancedPaste'
+    'feature-enhanced-paste': 'enableEnhancedPaste',
+    'feature-enhanced-paste-po': 'enableEnhancedPastePO',
+    'feature-enhanced-paste-transfer': 'enableEnhancedPasteTransfer'
 };
 
 /**
@@ -41,6 +47,13 @@ function saveOptions() {
     // Save Enhanced Paste specific sub-options
     const prefixValue = enhancedPastePrefixInput.value.trim();
     settings.enhancedPastePrefix = prefixValue !== '' ? prefixValue : 'o00';
+
+    const poPrefixValue = enhancedPastePOPrefixInput.value.trim();
+    settings.enhancedPastePOPrefix = poPrefixValue !== '' ? poPrefixValue : 'p00';
+
+    const transferPrefixValue = enhancedPasteTransferPrefixInput.value.trim();
+    settings.enhancedPasteTransferPrefix = transferPrefixValue !== '' ? transferPrefixValue : 't00';
+
     settings.enhancedPasteStripAfterDash = enhancedPasteStripSuffixCheckbox.checked;
     settings.showToastNotification = showToastNotificationCheckbox.checked;
     settings.enhancedPasteAction = enhancedPasteActionSelect.value;
@@ -76,6 +89,8 @@ function loadOptions() {
     const settingKeys = [
         ...Object.values(featureMapping),
         'enhancedPastePrefix',
+        'enhancedPastePOPrefix',
+        'enhancedPasteTransferPrefix',
         'enhancedPasteStripAfterDash',
         'showToastNotification',
         'enhancedPasteAction'
@@ -96,15 +111,23 @@ function loadOptions() {
         document.getElementById('feature-find').checked = settings.enableFind !== false;
         document.getElementById('feature-undo').checked = settings.enableUndo !== false;
 
-        // Enhanced paste defaults to false, prefix to 'o00', strip suffix defaults to true
+        // Enhanced paste defaults:
         enhancedPasteCheckbox.checked = settings.enableEnhancedPaste === true;
         enhancedPastePrefixInput.value = typeof settings.enhancedPastePrefix === 'string' ? settings.enhancedPastePrefix : 'o00';
+
+        enhancedPastePOCheckbox.checked = settings.enableEnhancedPastePO === true;
+        enhancedPastePOPrefixInput.value = typeof settings.enhancedPastePOPrefix === 'string' ? settings.enhancedPastePOPrefix : 'p00';
+
+        enhancedPasteTransferCheckbox.checked = settings.enableEnhancedPasteTransfer === true;
+        enhancedPasteTransferPrefixInput.value = typeof settings.enhancedPasteTransferPrefix === 'string' ? settings.enhancedPasteTransferPrefix : 't00';
+
         enhancedPasteStripSuffixCheckbox.checked = settings.enhancedPasteStripAfterDash !== false;
         showToastNotificationCheckbox.checked = settings.showToastNotification !== false;
         enhancedPasteActionSelect.value = settings.enhancedPasteAction || 'none';
 
-        // Automatically expand advanced panel if enhanced paste is currently enabled
-        if (advancedPanel && settings.enableEnhancedPaste === true) {
+        // Automatically expand advanced panel if any enhanced paste option is currently enabled
+        const hasAnyEnhanced = settings.enableEnhancedPaste === true || settings.enableEnhancedPastePO === true || settings.enableEnhancedPasteTransfer === true;
+        if (advancedPanel && hasAnyEnhanced) {
             advancedPanel.open = true;
         }
 
@@ -117,12 +140,19 @@ function loadOptions() {
  * Updates the disabled/visibility state of the Enhanced Paste sub-options.
  */
 function updateSuboptionsState() {
-    const isEnabled = enhancedPasteCheckbox.checked;
-    enhancedPasteSuboptions.classList.toggle('disabled', !isEnabled);
-    enhancedPastePrefixInput.disabled = !isEnabled;
-    enhancedPasteStripSuffixCheckbox.disabled = !isEnabled;
-    showToastNotificationCheckbox.disabled = !isEnabled;
-    enhancedPasteActionSelect.disabled = !isEnabled;
+    const isOrderEnabled = enhancedPasteCheckbox.checked;
+    const isPOEnabled = enhancedPastePOCheckbox.checked;
+    const isTransferEnabled = enhancedPasteTransferCheckbox.checked;
+    const anyEnabled = isOrderEnabled || isPOEnabled || isTransferEnabled;
+
+    enhancedPastePrefixInput.disabled = !isOrderEnabled;
+    enhancedPastePOPrefixInput.disabled = !isPOEnabled;
+    enhancedPasteTransferPrefixInput.disabled = !isTransferEnabled;
+
+    enhancedPasteSuboptions.classList.toggle('disabled', !anyEnabled);
+    enhancedPasteStripSuffixCheckbox.disabled = !anyEnabled;
+    showToastNotificationCheckbox.disabled = !anyEnabled;
+    enhancedPasteActionSelect.disabled = !anyEnabled;
 }
 
 /**
@@ -154,9 +184,9 @@ function handleSelectAllChange() {
  * @param {Event} event The DOM event object.
  */
 function handleFeatureChange(event) {
-    if (event.target === enhancedPasteCheckbox) {
+    if (event.target === enhancedPasteCheckbox || event.target === enhancedPastePOCheckbox || event.target === enhancedPasteTransferCheckbox) {
         updateSuboptionsState();
-        if (enhancedPasteCheckbox.checked && advancedPanel && !advancedPanel.open) {
+        if (event.target.checked && advancedPanel && !advancedPanel.open) {
             advancedPanel.open = true;
         }
     }

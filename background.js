@@ -17,6 +17,10 @@ chrome.runtime.onInstalled.addListener((details) => {
             enableUndo: true,
             enableEnhancedPaste: false,
             enhancedPastePrefix: "o00",
+            enableEnhancedPastePO: false,
+            enhancedPastePOPrefix: "p00",
+            enableEnhancedPasteTransfer: false,
+            enhancedPasteTransferPrefix: "t00",
             enhancedPasteStripAfterDash: true,
             showToastNotification: true,
             enhancedPasteAction: "none"
@@ -32,6 +36,16 @@ chrome.runtime.onInstalled.addListener((details) => {
         chrome.contextMenus.create({
             id: 'twl-paste-order',
             title: 'Paste as TWL Order (Ctrl+O)',
+            contexts: ['editable']
+        }, () => { void chrome.runtime.lastError; });
+        chrome.contextMenus.create({
+            id: 'twl-paste-po',
+            title: 'Paste as TWL PO (Ctrl+P)',
+            contexts: ['editable']
+        }, () => { void chrome.runtime.lastError; });
+        chrome.contextMenus.create({
+            id: 'twl-paste-transfer',
+            title: 'Paste as TWL Transfer (Ctrl+W)',
             contexts: ['editable']
         }, () => { void chrome.runtime.lastError; });
         chrome.contextMenus.create({
@@ -62,6 +76,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (!tab || !tab.id) return;
     if (info.menuItemId === 'twl-paste-order') {
         dispatchTabMessage(tab.id, { action: 'context-menu-paste-order' }, info.frameId);
+    } else if (info.menuItemId === 'twl-paste-po') {
+        dispatchTabMessage(tab.id, { action: 'context-menu-paste-po' }, info.frameId);
+    } else if (info.menuItemId === 'twl-paste-transfer') {
+        dispatchTabMessage(tab.id, { action: 'context-menu-paste-transfer' }, info.frameId);
     } else if (info.menuItemId === 'twl-paste-trimmed') {
         dispatchTabMessage(tab.id, { action: 'context-menu-paste-trimmed' }, info.frameId);
     }

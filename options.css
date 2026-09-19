@@ -234,7 +234,26 @@ fieldset {
 .feature-group {
     display: flex;
     flex-direction: column;
+    gap: 0.75rem;
+}
+
+.paste-type-card {
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background-color: #fafbfc;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.paste-type-card:hover {
+    border-color: #cbd5e1;
+}
+
+.prefix-field {
+    margin-left: 2.25rem;
 }
 
 .sub-options-container {

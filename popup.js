@@ -3,12 +3,51 @@ const statusPill = document.getElementById('status-pill');
 const statusText = document.getElementById('status-text');
 const toggleStandard = document.getElementById('toggle-standard-hotkeys');
 const toggleEnhanced = document.getElementById('toggle-enhanced-paste');
+const toggleEnhancedPO = document.getElementById('toggle-enhanced-paste-po');
+const toggleEnhancedTransfer = document.getElementById('toggle-enhanced-paste-transfer');
 const previewRaw = document.getElementById('preview-raw');
 const previewFormatted = document.getElementById('preview-formatted');
+const previewPO = document.getElementById('preview-po');
+const previewTransfer = document.getElementById('preview-transfer');
 const btnOpenOptions = document.getElementById('btn-open-options');
 const btnShortcuts = document.getElementById('btn-shortcuts');
 
 let currentSettings = {};
+
+/**
+ * Formats an order/PO/transfer number for display preview.
+ */
+function formatPreview(rawText, type) {
+    if (!rawText || !rawText.trim()) return '--';
+
+    let formatted = rawText.trim();
+    const stripDash = currentSettings.enhancedPasteStripAfterDash;
+
+    if (stripDash) {
+        formatted = formatted.split('-')[0].trim();
+    } else {
+        formatted = formatted.replace(/-/g, '').trim();
+    }
+
+    const orderPrefix = currentSettings.enhancedPastePrefix || 'o00';
+    const poPrefix = currentSettings.enhancedPastePOPrefix || 'p00';
+    const transferPrefix = currentSettings.enhancedPasteTransferPrefix || 't00';
+
+    let targetPrefix = orderPrefix;
+    if (type === 'po') targetPrefix = poPrefix;
+    if (type === 'transfer') targetPrefix = transferPrefix;
+
+    const knownPrefixes = [orderPrefix, poPrefix, transferPrefix, 'o00', 'p00', 't00'];
+    for (const p of knownPrefixes) {
+        if (p && formatted.toLowerCase().startsWith(p.toLowerCase())) {
+            formatted = formatted.slice(p.length).trim();
+            break;
+        }
+    }
+
+    formatted = targetPrefix + formatted;
+    return formatted.length > 18 ? formatted.substring(0, 18) + '...' : formatted;
+}
 
 /**
  * Initializes the popup: loads settings, checks active tab status, and inspects clipboard.
@@ -22,7 +61,11 @@ function initializePopup() {
         'enableUndo',
         'enableEnhancedPaste',
         'enhancedPastePrefix',
-        'enhancedPasteStripAfterDash'
+        'enhancedPasteStripAfterDash',
+        'enableEnhancedPastePO',
+        'enhancedPastePOPrefix',
+        'enableEnhancedPasteTransfer',
+        'enhancedPasteTransferPrefix'
     ];
 
     chrome.storage.sync.get(keys, (settings) => {
@@ -34,13 +77,19 @@ function initializePopup() {
             enableUndo: settings.enableUndo !== false,
             enableEnhancedPaste: settings.enableEnhancedPaste === true,
             enhancedPastePrefix: typeof settings.enhancedPastePrefix === 'string' ? settings.enhancedPastePrefix : 'o00',
-            enhancedPasteStripAfterDash: settings.enhancedPasteStripAfterDash !== false
+            enhancedPasteStripAfterDash: settings.enhancedPasteStripAfterDash !== false,
+            enableEnhancedPastePO: settings.enableEnhancedPastePO === true,
+            enhancedPastePOPrefix: typeof settings.enhancedPastePOPrefix === 'string' ? settings.enhancedPastePOPrefix : 'p00',
+            enableEnhancedPasteTransfer: settings.enableEnhancedPasteTransfer === true,
+            enhancedPasteTransferPrefix: typeof settings.enhancedPasteTransferPrefix === 'string' ? settings.enhancedPasteTransferPrefix : 't00'
         };
 
         // Standard hotkeys toggle is considered checked if at least one standard key is enabled
         const hasStandard = currentSettings.enableCopy || currentSettings.enablePaste || currentSettings.enableSelectAll || currentSettings.enableUndo || currentSettings.enableFind;
         toggleStandard.checked = hasStandard;
         toggleEnhanced.checked = currentSettings.enableEnhancedPaste;
+        if (toggleEnhancedPO) toggleEnhancedPO.checked = currentSettings.enableEnhancedPastePO;
+        if (toggleEnhancedTransfer) toggleEnhancedTransfer.checked = currentSettings.enableEnhancedPasteTransfer;
 
         checkActiveTab();
         loadClipboardPreview();
@@ -113,6 +162,8 @@ function loadClipboardPreview() {
         if (!rawText || !rawText.trim()) {
             previewRaw.textContent = '(empty)';
             previewFormatted.textContent = '--';
+            if (previewPO) previewPO.textContent = '--';
+            if (previewTransfer) previewTransfer.textContent = '--';
             return;
         }
 
@@ -120,24 +171,14 @@ function loadClipboardPreview() {
         const displayRaw = trimmed.length > 18 ? trimmed.substring(0, 18) + '...' : trimmed;
         previewRaw.textContent = displayRaw;
 
-        let formatted = trimmed;
-        if (currentSettings.enhancedPasteStripAfterDash) {
-            formatted = formatted.split('-')[0].trim();
-        } else {
-            formatted = formatted.replace(/-/g, '').trim();
-        }
-        const prefix = currentSettings.enhancedPastePrefix || 'o00';
-        if (prefix && formatted.toLowerCase().startsWith(prefix.toLowerCase())) {
-            formatted = prefix + formatted.slice(prefix.length);
-        } else {
-            formatted = prefix + formatted;
-        }
-
-        const displayFormatted = formatted.length > 18 ? formatted.substring(0, 18) + '...' : formatted;
-        previewFormatted.textContent = displayFormatted;
+        previewFormatted.textContent = formatPreview(trimmed, 'order');
+        if (previewPO) previewPO.textContent = formatPreview(trimmed, 'po');
+        if (previewTransfer) previewTransfer.textContent = formatPreview(trimmed, 'transfer');
     }).catch(() => {
         previewRaw.textContent = 'Unavailable';
         previewFormatted.textContent = '--';
+        if (previewPO) previewPO.textContent = '--';
+        if (previewTransfer) previewTransfer.textContent = '--';
     });
 }
 
@@ -167,6 +208,28 @@ toggleEnhanced.addEventListener('change', () => {
     });
     loadClipboardPreview();
 });
+
+if (toggleEnhancedPO) {
+    toggleEnhancedPO.addEventListener('change', () => {
+        const isChecked = toggleEnhancedPO.checked;
+        currentSettings.enableEnhancedPastePO = isChecked;
+        chrome.storage.sync.set({
+            enableEnhancedPastePO: isChecked
+        });
+        loadClipboardPreview();
+    });
+}
+
+if (toggleEnhancedTransfer) {
+    toggleEnhancedTransfer.addEventListener('change', () => {
+        const isChecked = toggleEnhancedTransfer.checked;
+        currentSettings.enableEnhancedPasteTransfer = isChecked;
+        chrome.storage.sync.set({
+            enableEnhancedPasteTransfer: isChecked
+        });
+        loadClipboardPreview();
+    });
+}
 
 // Listen for storage changes from the options page in real-time
 chrome.storage.onChanged.addListener((changes, areaName) => {
