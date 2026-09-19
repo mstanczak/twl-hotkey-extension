@@ -53,6 +53,83 @@ function initialize() {
     });
 }
 
+// --- Shadow DOM & Framework Interop Helpers ---
+
+/**
+ * Traverses open Shadow DOM roots to find the truly active focused element.
+ * Essential for Infor CloudSuite SoHo XI Web Components (e.g. <ids-input>).
+ * @param {Document|ShadowRoot} [root=document]
+ * @returns {Element|null}
+ */
+function getActiveElement(root = document) {
+    let active = root.activeElement;
+    while (active && active.shadowRoot && active.shadowRoot.activeElement) {
+        active = active.shadowRoot.activeElement;
+    }
+    return active;
+}
+
+/**
+ * Resolves an element to its inner editable input if wrapped by a custom Web Component.
+ * @param {Element|null} el Target element.
+ * @returns {Element|null} Resolved editable element or original element.
+ */
+function resolveEditableElement(el) {
+    if (!el) return null;
+    let target = el;
+    while (target && target.shadowRoot && target.shadowRoot.activeElement) {
+        target = target.shadowRoot.activeElement;
+    }
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return target;
+    }
+    if (target && target.shadowRoot) {
+        const inner = target.shadowRoot.querySelector('input:not([type="hidden"]), textarea');
+        if (inner) return inner;
+    }
+    return target;
+}
+
+/**
+ * Checks if an element is an editable text field (standard or Web Component).
+ * @param {Element|null} el
+ * @returns {boolean}
+ */
+function isEditableElement(el) {
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    const tag = (el.tagName || '').toUpperCase();
+    if (tag === 'TEXTAREA') {
+        return !el.readOnly && !el.disabled;
+    }
+    if (tag === 'INPUT') {
+        const nonTextTypes = ['BUTTON', 'CHECKBOX', 'RADIO', 'RANGE', 'RESET', 'SUBMIT', 'FILE', 'IMAGE'];
+        const type = (el.type || 'text').toUpperCase();
+        if (nonTextTypes.includes(type)) return false;
+        return !el.readOnly && !el.disabled;
+    }
+    return false;
+}
+
+/**
+ * Sets an element's value using the native prototype setter so reactive frameworks (React, SoHo XI)
+ * detect the change instead of having it bypassed or reverted.
+ * @param {HTMLInputElement|HTMLTextAreaElement} element
+ * @param {string} value
+ */
+function setNativeValue(element, value) {
+    if (!element) return;
+    const prototype = element instanceof HTMLTextAreaElement
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
+    if (descriptor && descriptor.set) {
+        descriptor.set.call(element, value);
+    } else {
+        element.value = value;
+    }
+}
+
 // --- Undo (Ctrl+Z) Functionality ---
 
 /**
@@ -94,8 +171,17 @@ function undo(element) {
     }
 
     if (targetValue !== null) {
-        element.value = targetValue;
-        element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        setNativeValue(element, targetValue);
+        try {
+            element.selectionStart = element.selectionEnd = targetValue.length;
+        } catch (e) {
+            // Some input types (number, email) throw on selectionStart
+        }
+        try {
+            element.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'historyUndo' }));
+        } catch (e) {
+            element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        }
         element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
     }
 }
@@ -113,8 +199,17 @@ let toastTimeout = null;
 function showToast(message, type = 'info') {
     if (!settings.showToastNotification) return;
 
-    if (!activeToast) {
-        activeToast = document.createElement('div');
+    let targetDoc = document;
+    try {
+        if (window.top && window.top.document && window.top.document.documentElement) {
+            targetDoc = window.top.document;
+        }
+    } catch (e) {
+        targetDoc = document;
+    }
+
+    if (!activeToast || activeToast.ownerDocument !== targetDoc) {
+        activeToast = targetDoc.createElement('div');
         activeToast.id = 'twl-hotkey-toast';
         activeToast.setAttribute('role', 'status');
         activeToast.setAttribute('aria-live', 'polite');
@@ -141,7 +236,7 @@ function showToast(message, type = 'info') {
             gap: 8px;
             max-width: 360px;
         `;
-        document.documentElement.appendChild(activeToast);
+        targetDoc.documentElement.appendChild(activeToast);
     }
 
     // Indicator color accent
@@ -233,7 +328,14 @@ function formatOrderNumber(rawText) {
 function insertTextIntoElement(element, text) {
     if (!element) return false;
 
-    if (settings.enableUndo) {
+    // Focus element to ensure document.execCommand targets it
+    try {
+        if (typeof element.focus === 'function' && document.activeElement !== element) {
+            element.focus();
+        }
+    } catch (e) {}
+
+    if (settings.enableUndo && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA')) {
         saveState(element);
     }
 
@@ -245,16 +347,52 @@ function insertTextIntoElement(element, text) {
     }
 
     if (!inserted && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && !element.readOnly && !element.disabled) {
-        const start = element.selectionStart ?? element.value.length;
-        const end = element.selectionEnd ?? element.value.length;
-        const val = element.value;
-        element.value = val.substring(0, start) + text + val.substring(end);
-        element.selectionStart = element.selectionEnd = start + text.length;
+        let start = element.value ? element.value.length : 0;
+        let end = start;
+        let canSelect = false;
+
+        try {
+            if (typeof element.selectionStart === 'number') {
+                start = element.selectionStart;
+                end = element.selectionEnd ?? start;
+                canSelect = true;
+            }
+        } catch (e) {
+            // Some input types (number, email, date) throw DOMException on selectionStart
+            canSelect = false;
+        }
+
+        const val = element.value || '';
+        const newVal = val.substring(0, start) + text + val.substring(end);
+        setNativeValue(element, newVal);
+
+        if (canSelect) {
+            try {
+                element.selectionStart = element.selectionEnd = start + text.length;
+            } catch (e) {}
+        }
         inserted = true;
+    } else if (!inserted && element.isContentEditable) {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            const textNode = document.createTextNode(text);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            inserted = true;
+        }
     }
 
     if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-        element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        try {
+            element.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertFromPaste', data: text }));
+        } catch (e) {
+            element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        }
         element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
     }
 
@@ -266,13 +404,15 @@ function insertTextIntoElement(element, text) {
  * @param {HTMLElement} [targetElement] Optional explicit target element.
  */
 function performEnhancedPaste(targetElement) {
-    const el = targetElement || document.activeElement;
-    const isEditable = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.readOnly && !el.disabled;
+    const el = resolveEditableElement(targetElement) || resolveEditableElement(getActiveElement());
+    const isEditable = isEditableElement(el);
 
     if (!isEditable) {
         showToast('Click an input field first to paste order', 'warning');
         return;
     }
+
+    try { el.focus(); } catch (e) {}
 
     navigator.clipboard.readText().then((rawText) => {
         if (!rawText) {
@@ -301,10 +441,10 @@ function performEnhancedPaste(targetElement) {
  * @param {HTMLElement} [targetElement] Optional explicit target element.
  */
 function performTrimmedPaste(targetElement) {
-    const el = targetElement || document.activeElement;
-    const isEditable = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.readOnly && !el.disabled;
+    const el = resolveEditableElement(targetElement) || resolveEditableElement(getActiveElement());
+    if (!el || !isEditableElement(el)) return;
 
-    if (!isEditable) return;
+    try { el.focus(); } catch (e) {}
 
     navigator.clipboard.readText().then((rawText) => {
         if (!rawText) return;
@@ -322,14 +462,16 @@ function performTrimmedPaste(targetElement) {
 
 // Use 'focusin' and 'input' on window to manage state for the Undo feature.
 window.addEventListener('focusin', (event) => {
-    if (settings.enableUndo && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
-        saveState(event.target);
+    const target = resolveEditableElement(event.target);
+    if (settings.enableUndo && target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        saveState(target);
     }
 }, true);
 
 window.addEventListener('input', (event) => {
-    if (settings.enableUndo && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
-        saveState(event.target);
+    const target = resolveEditableElement(event.target);
+    if (settings.enableUndo && target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        saveState(target);
     }
 }, true);
 
@@ -338,15 +480,15 @@ window.addEventListener('keydown', (event) => {
     const isCtrlPressed = event.ctrlKey || event.metaKey;
     if (!isCtrlPressed) return;
 
-    const key = event.key.toLowerCase();
-    const activeElement = document.activeElement;
+    const key = (event.key || '').toLowerCase();
+    const activeElement = resolveEditableElement(getActiveElement());
 
     // Handle Undo (Ctrl+Z) - ensure Shift is not pressed (so Ctrl+Shift+Z / Redo is not hijacked)
     if (settings.enableUndo && !event.shiftKey && key === 'z') {
-        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        if (activeElement && isEditableElement(activeElement)) {
             debugLog('TWL Enabler: Undo triggered.');
             event.preventDefault();
-            event.stopPropagation();
+            event.stopImmediatePropagation();
             undo(activeElement);
         }
         return;
@@ -354,8 +496,7 @@ window.addEventListener('keydown', (event) => {
 
     // Handle Enhanced TWL Order Paste (Ctrl+O)
     if (settings.enableEnhancedPaste && !event.shiftKey && key === 'o') {
-        const isEditable = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && !activeElement.readOnly && !activeElement.disabled;
-        if (isEditable) {
+        if (activeElement && isEditableElement(activeElement)) {
             event.preventDefault();
             event.stopImmediatePropagation();
             debugLog('TWL Enabler: Enhanced Paste (Ctrl+O) triggered via keyboard.');
@@ -400,15 +541,36 @@ window.addEventListener('cut', (event) => {
 window.addEventListener('paste', (event) => {
     if (settings.enablePaste) {
         debugLog("TWL Enabler: Detected paste event.");
+        // Always stop propagation to prevent TWL hostile scripts from blocking the paste!
         event.stopImmediatePropagation();
-        event.preventDefault(); // Prevent default paste to insert trimmed text
 
-        const rawText = (event.clipboardData || window.clipboardData)?.getData('text/plain') || '';
-        const text = rawText.trim();
-        const activeElement = document.activeElement;
+        const clipboardData = event.clipboardData || window.clipboardData;
+        if (!clipboardData) return;
 
-        insertTextIntoElement(activeElement, text);
-        debugLog(`TWL Enabler: Pasted trimmed text: "${text}"`);
+        // If the paste solely contains files/images and no plain text,
+        // allow the browser / host application to handle native file/image pasting!
+        const hasFiles = clipboardData.types && (clipboardData.types.includes('Files') || (clipboardData.files && clipboardData.files.length > 0));
+        const rawText = clipboardData.getData('text/plain');
+
+        if (!rawText && hasFiles) {
+            debugLog("TWL Enabler: Paste contains files with no plain text. Allowing default file paste.");
+            return;
+        }
+
+        // Identify the target editable element (checking event.target first, then activeElement, drilling through Shadow DOM)
+        const targetElement = resolveEditableElement(event.target) || resolveEditableElement(getActiveElement());
+        if (!targetElement || !isEditableElement(targetElement)) {
+            debugLog("TWL Enabler: Target is not editable. Allowing default paste.");
+            return;
+        }
+
+        // Only prevent default if we actually have text to trim and an editable element to insert into
+        if (typeof rawText === 'string') {
+            event.preventDefault();
+            const text = rawText.trim();
+            insertTextIntoElement(targetElement, text);
+            debugLog(`TWL Enabler: Pasted trimmed text: "${text}"`);
+        }
     }
 }, true);
 
