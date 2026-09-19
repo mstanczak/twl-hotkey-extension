@@ -32,6 +32,20 @@
         "mac": "Command+O"
       },
       "description": "Enhanced TWL Order Paste"
+    },
+    "enhanced-paste-po": {
+      "suggested_key": {
+        "default": "Ctrl+M",
+        "mac": "Command+M"
+      },
+      "description": "Enhanced TWL Purchase Order Paste"
+    },
+    "enhanced-paste-transfer": {
+      "suggested_key": {
+        "default": "Ctrl+K",
+        "mac": "Command+K"
+      },
+      "description": "Enhanced TWL Warehouse Transfer Paste"
     }
   },
   "content_scripts": [

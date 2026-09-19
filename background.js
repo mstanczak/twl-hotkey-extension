@@ -40,12 +40,12 @@ chrome.runtime.onInstalled.addListener((details) => {
         }, () => { void chrome.runtime.lastError; });
         chrome.contextMenus.create({
             id: 'twl-paste-po',
-            title: 'Paste as TWL PO (Ctrl+P)',
+            title: 'Paste as TWL PO (Ctrl+M)',
             contexts: ['editable']
         }, () => { void chrome.runtime.lastError; });
         chrome.contextMenus.create({
             id: 'twl-paste-transfer',
-            title: 'Paste as TWL Transfer (Ctrl+W)',
+            title: 'Paste as TWL Transfer (Ctrl+K)',
             contexts: ['editable']
         }, () => { void chrome.runtime.lastError; });
         chrome.contextMenus.create({
@@ -87,9 +87,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 // Handle keyboard shortcut commands configured in chrome://extensions/shortcuts
 chrome.commands.onCommand.addListener((command, tab) => {
-    if (command === 'enhanced-paste' && tab && tab.id) {
-        chrome.tabs.sendMessage(tab.id, { action: 'trigger-enhanced-paste' }, () => {
-            void chrome.runtime.lastError;
-        });
+    if (!tab || !tab.id) return;
+    if (command === 'enhanced-paste') {
+        dispatchTabMessage(tab.id, { action: 'trigger-enhanced-paste' });
+    } else if (command === 'enhanced-paste-po') {
+        dispatchTabMessage(tab.id, { action: 'context-menu-paste-po' });
+    } else if (command === 'enhanced-paste-transfer') {
+        dispatchTabMessage(tab.id, { action: 'context-menu-paste-transfer' });
     }
 });

@@ -595,23 +595,23 @@ window.addEventListener('keydown', (event) => {
         }
     }
 
-    // Handle Enhanced TWL Purchase Order Paste (Ctrl+P)
-    if (settings.enableEnhancedPastePO && !event.shiftKey && key === 'p') {
+    // Handle Enhanced TWL Purchase Order Paste (Ctrl+M)
+    if (settings.enableEnhancedPastePO && !event.shiftKey && key === 'm') {
         if (activeElement && isEditableElement(activeElement)) {
             event.preventDefault();
             event.stopImmediatePropagation();
-            debugLog('TWL Enabler: Enhanced PO Paste (Ctrl+P) triggered via keyboard.');
+            debugLog('TWL Enabler: Enhanced PO Paste (Ctrl+M) triggered via keyboard.');
             performEnhancedPaste('po', activeElement);
             return;
         }
     }
 
-    // Handle Enhanced TWL Warehouse Transfer Paste (Ctrl+W)
-    if (settings.enableEnhancedPasteTransfer && !event.shiftKey && key === 'w') {
+    // Handle Enhanced TWL Warehouse Transfer Paste (Ctrl+K)
+    if (settings.enableEnhancedPasteTransfer && !event.shiftKey && key === 'k') {
         if (activeElement && isEditableElement(activeElement)) {
             event.preventDefault();
             event.stopImmediatePropagation();
-            debugLog('TWL Enabler: Enhanced Transfer Paste (Ctrl+W) triggered via keyboard.');
+            debugLog('TWL Enabler: Enhanced Transfer Paste (Ctrl+K) triggered via keyboard.');
             performEnhancedPaste('transfer', activeElement);
             return;
         }
