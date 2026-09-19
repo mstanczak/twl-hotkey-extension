@@ -112,6 +112,52 @@ function isEditableElement(el) {
 }
 
 /**
+ * Detects whether an element or the currently active element is part of a complex
+ * code editor (such as Monaco Editor in Infor Data Fabric Query / Compass, CodeMirror, Ace).
+ * These code editors implement their own virtualized clipboard, multi-cursor, and undo management.
+ * Intercepting or stopping propagation on them breaks their native copy/paste functionality.
+ * @param {Element|null} target
+ * @returns {boolean}
+ */
+function isCodeEditor(target) {
+    let el = target;
+    while (el) {
+        if (el.classList && (
+            el.classList.contains('monaco-editor') ||
+            el.classList.contains('native-edit-context') ||
+            el.classList.contains('CodeMirror') ||
+            el.classList.contains('cm-editor') ||
+            el.classList.contains('cm-content') ||
+            el.classList.contains('ace_editor')
+        )) {
+            return true;
+        }
+        if (el.tagName) {
+            const tag = el.tagName.toLowerCase();
+            if (tag === 'ngx-monaco-editor' || tag === 'df-compass-monaco-editor-container') {
+                return true;
+            }
+        }
+        if (el.hasAttribute && (
+            el.hasAttribute('data-mode-id') ||
+            el.hasAttribute('data-keybinding-context') ||
+            el.hasAttribute('data-editor-code')
+        )) {
+            return true;
+        }
+        if (el.closest && el.closest('.monaco-editor, ngx-monaco-editor, [data-mode-id], .CodeMirror, .cm-editor, .ace_editor')) {
+            return true;
+        }
+        el = el.parentElement || (el.getRootNode && el.getRootNode() !== document ? el.getRootNode().host : null);
+    }
+    return false;
+}
+
+function isInsideCodeEditor(target) {
+    return isCodeEditor(target) || isCodeEditor(getActiveElement());
+}
+
+/**
  * Sets an element's value using the native prototype setter so reactive frameworks (React, SoHo XI)
  * detect the change instead of having it bypassed or reverted.
  * @param {HTMLInputElement|HTMLTextAreaElement} element
@@ -462,6 +508,7 @@ function performTrimmedPaste(targetElement) {
 
 // Use 'focusin' and 'input' on window to manage state for the Undo feature.
 window.addEventListener('focusin', (event) => {
+    if (isInsideCodeEditor(event.target)) return;
     const target = resolveEditableElement(event.target);
     if (settings.enableUndo && target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
         saveState(target);
@@ -469,6 +516,7 @@ window.addEventListener('focusin', (event) => {
 }, true);
 
 window.addEventListener('input', (event) => {
+    if (isInsideCodeEditor(event.target)) return;
     const target = resolveEditableElement(event.target);
     if (settings.enableUndo && target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
         saveState(target);
@@ -477,6 +525,10 @@ window.addEventListener('input', (event) => {
 
 // Main keydown listener to intercept and manage all hotkeys on window.
 window.addEventListener('keydown', (event) => {
+    // If the event occurs inside a rich code editor (like Monaco Editor in Data Fabric Query),
+    // let the editor handle its own keybindings (Ctrl+C, Ctrl+V, Ctrl+Z, Ctrl+F, Ctrl+A, etc.) natively.
+    if (isInsideCodeEditor(event.target)) return;
+
     const isCtrlPressed = event.ctrlKey || event.metaKey;
     if (!isCtrlPressed) return;
 
@@ -523,6 +575,7 @@ window.addEventListener('keydown', (event) => {
 
 // Listener for the 'copy' event on window
 window.addEventListener('copy', (event) => {
+    if (isInsideCodeEditor(event.target)) return;
     if (settings.enableCopy) {
         debugLog("TWL Enabler: Detected copy event. Stopping propagation.");
         event.stopImmediatePropagation();
@@ -531,6 +584,7 @@ window.addEventListener('copy', (event) => {
 
 // Listener for the 'cut' event on window
 window.addEventListener('cut', (event) => {
+    if (isInsideCodeEditor(event.target)) return;
     if (settings.enableCopy) {
         debugLog("TWL Enabler: Detected cut event. Stopping propagation.");
         event.stopImmediatePropagation();
@@ -539,6 +593,7 @@ window.addEventListener('cut', (event) => {
 
 // Listener for the 'paste' event to handle trimmed pasting and framework synchronization
 window.addEventListener('paste', (event) => {
+    if (isInsideCodeEditor(event.target)) return;
     if (settings.enablePaste) {
         debugLog("TWL Enabler: Detected paste event.");
         // Always stop propagation to prevent TWL hostile scripts from blocking the paste!
