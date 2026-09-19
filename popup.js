@@ -122,12 +122,16 @@ function loadClipboardPreview() {
 
         let formatted = trimmed;
         if (currentSettings.enhancedPasteStripAfterDash) {
-            formatted = formatted.split('-')[0];
+            formatted = formatted.split('-')[0].trim();
         } else {
-            formatted = formatted.replace(/-/g, '');
+            formatted = formatted.replace(/-/g, '').trim();
         }
         const prefix = currentSettings.enhancedPastePrefix || 'o00';
-        formatted = prefix + formatted;
+        if (prefix && formatted.toLowerCase().startsWith(prefix.toLowerCase())) {
+            formatted = prefix + formatted.slice(prefix.length);
+        } else {
+            formatted = prefix + formatted;
+        }
 
         const displayFormatted = formatted.length > 18 ? formatted.substring(0, 18) + '...' : formatted;
         previewFormatted.textContent = displayFormatted;
@@ -141,6 +145,11 @@ function loadClipboardPreview() {
 
 toggleStandard.addEventListener('change', () => {
     const isChecked = toggleStandard.checked;
+    currentSettings.enableCopy = isChecked;
+    currentSettings.enablePaste = isChecked;
+    currentSettings.enableSelectAll = isChecked;
+    currentSettings.enableFind = isChecked;
+    currentSettings.enableUndo = isChecked;
     chrome.storage.sync.set({
         enableCopy: isChecked,
         enablePaste: isChecked,
@@ -152,9 +161,18 @@ toggleStandard.addEventListener('change', () => {
 
 toggleEnhanced.addEventListener('change', () => {
     const isChecked = toggleEnhanced.checked;
+    currentSettings.enableEnhancedPaste = isChecked;
     chrome.storage.sync.set({
         enableEnhancedPaste: isChecked
     });
+    loadClipboardPreview();
+});
+
+// Listen for storage changes from the options page in real-time
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'sync') {
+        initializePopup();
+    }
 });
 
 // --- Actions ---

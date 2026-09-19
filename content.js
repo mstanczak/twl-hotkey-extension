@@ -12,7 +12,7 @@ function debugLog(...args) {
 }
 
 let settings = {};
-const undoHistory = new Map();
+const undoHistory = new WeakMap();
 const MAX_HISTORY_SIZE = 50; // Limit history size per element
 
 /**
@@ -60,6 +60,7 @@ function initialize() {
  * @param {HTMLInputElement|HTMLTextAreaElement} element The input element.
  */
 function saveState(element) {
+    if (!element || typeof element.value !== 'string') return;
     if (!undoHistory.has(element)) {
         undoHistory.set(element, []);
     }
@@ -80,7 +81,7 @@ function saveState(element) {
  * @param {HTMLInputElement|HTMLTextAreaElement} element The input element.
  */
 function undo(element) {
-    if (!undoHistory.has(element)) return;
+    if (!element || !undoHistory.has(element)) return;
     const history = undoHistory.get(element);
     
     let targetValue = null;
@@ -212,11 +213,14 @@ function handlePostPasteAction(element) {
 function formatOrderNumber(rawText) {
     let text = (rawText || '').trim();
     if (settings.enhancedPasteStripAfterDash) {
-        text = text.split('-')[0];
+        text = text.split('-')[0].trim();
     } else {
-        text = text.replace(/-/g, '');
+        text = text.replace(/-/g, '').trim();
     }
     const prefix = settings.enhancedPastePrefix || '';
+    if (prefix && text.toLowerCase().startsWith(prefix.toLowerCase())) {
+        return prefix + text.slice(prefix.length);
+    }
     return prefix + text;
 }
 

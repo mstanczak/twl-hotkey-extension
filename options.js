@@ -4,6 +4,8 @@ const selectAllCheckbox = document.getElementById('select-all');
 const featureCheckboxes = document.querySelectorAll('.feature-checkbox');
 const statusMessage = document.getElementById('status-message');
 const celebrationContainer = document.getElementById('celebration-container');
+let statusTimeout = null;
+let animationTimeout = null;
 
 // Enhanced Paste & Advanced DOM Elements
 const advancedPanel = document.getElementById('advanced-panel');
@@ -56,9 +58,13 @@ function saveOptions() {
             statusMessage.classList.add('success');
         }
 
+        if (statusTimeout) {
+            clearTimeout(statusTimeout);
+        }
         statusMessage.style.opacity = '1';
-        setTimeout(() => {
+        statusTimeout = setTimeout(() => {
             statusMessage.style.opacity = '0';
+            statusTimeout = null;
         }, 2000);
     });
 }
@@ -137,6 +143,9 @@ function handleSelectAllChange() {
     });
     updateSelectAllState();
     updateSuboptionsState();
+    if (isChecked && advancedPanel && !advancedPanel.open) {
+        advancedPanel.open = true;
+    }
     triggerAnimation(isChecked);
 }
 
@@ -147,6 +156,9 @@ function handleSelectAllChange() {
 function handleFeatureChange(event) {
     if (event.target === enhancedPasteCheckbox) {
         updateSuboptionsState();
+        if (enhancedPasteCheckbox.checked && advancedPanel && !advancedPanel.open) {
+            advancedPanel.open = true;
+        }
     }
     updateSelectAllState();
     triggerAnimation(event.target.checked);
@@ -157,6 +169,9 @@ function handleFeatureChange(event) {
  * @param {boolean} isHappy - True for a happy (enabled) animation, false for sad (disabled).
  */
 function triggerAnimation(isHappy) {
+    if (animationTimeout) {
+        clearTimeout(animationTimeout);
+    }
     celebrationContainer.innerHTML = ''; // Clear previous animations
 
     // Updated happy colors to match the new theme
@@ -234,8 +249,9 @@ function triggerAnimation(isHappy) {
     }
 
     // Clean up the DOM after animations finish
-    setTimeout(() => {
+    animationTimeout = setTimeout(() => {
         celebrationContainer.innerHTML = '';
+        animationTimeout = null;
     }, 5000);
 }
 
@@ -256,5 +272,12 @@ featureCheckboxes.forEach(checkbox => {
 optionsForm.addEventListener('submit', (event) => {
     event.preventDefault(); // Prevent default form submission
     saveOptions();
+});
+
+// Listen for storage changes from popup in real-time
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'sync') {
+        loadOptions();
+    }
 });
 	
